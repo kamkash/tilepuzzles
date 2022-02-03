@@ -60,7 +60,6 @@ struct RollerRenderer : TRenderer {
     }
   })";
 
-  Tile* dragTile;
 }; // namespace tilepuzzles
 
 } // namespace tilepuzzles

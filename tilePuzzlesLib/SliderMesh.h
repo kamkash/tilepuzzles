@@ -15,11 +15,11 @@ struct SliderVertexBuffer : TQuadVertexBuffer {
   }
 
   virtual size_t getSize() {
-    return sizeof(QuadVertices) * (numQuads - 1);
+    return sizeof(QuadVertices) * (numVertShapes - 1);
   }
 
   virtual size_t getIndexSize() {
-    return sizeof(QuadIndices) * (numQuads - 1);
+    return sizeof(QuadIndices) * (numVertShapes - 1);
   }
 };
 

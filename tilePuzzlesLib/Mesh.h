@@ -8,7 +8,8 @@
 #include <ctime>
 
 #include "App.h"
-#include "TQuadVertexBuffer.h"
+#include "TVertexBuffer.h"
+#include "Vertex.h"
 #include "Tile.h"
 #include "enums.h"
 
@@ -20,6 +21,8 @@ using namespace filament;
 using namespace filament::math;
 
 namespace tilepuzzles {
+
+using TQuadVertexBuffer = TVertexBuffer<QuadVertices, QuadIndices, 4, 6>;
 
 struct Mesh {
 

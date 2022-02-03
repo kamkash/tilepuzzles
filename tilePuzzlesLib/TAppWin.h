@@ -46,8 +46,6 @@ using namespace filament;
 using utils::Entity;
 using utils::EntityManager;
 using utils::Path;
-using MinFilter = TextureSampler::MinFilter;
-using MagFilter = TextureSampler::MagFilter;
 
 namespace tilepuzzles {
 
@@ -108,8 +106,9 @@ struct TAppWin {
    *
    */
   void createRenderer() {
-    // renderer = std::shared_ptr<TRenderer>(new SliderRenderer());
-    renderer = std::shared_ptr<TRenderer>(new RollerRenderer());
+    renderer = std::shared_ptr<TRenderer>(new SliderRenderer());
+    // renderer = std::shared_ptr<TRenderer>(new RollerRenderer());
+    // renderer = std::shared_ptr<HexSpinRenderer>(new HexSpinRenderer());
   }
 
   /**

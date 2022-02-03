@@ -22,10 +22,27 @@ struct HexSpinRenderer : TRenderer {
     mesh = std::shared_ptr<Mesh>(new HexSpinMesh());
   }
 
+  virtual void initMesh() {
+    mesh->init(CFG);
+  }  
+
+  virtual void onMouseMove(const float2& dragPosition) {
+  }
+
+  virtual Tile* onMouseDown(const math::float2& pos) {
+    dragTile = mesh->hitTest(app, pos);
+    return dragTile;
+  }
+
+  virtual Tile* onMouseUp(const math::float2& pos) {
+    Tile* tile = mesh->hitTest(app, pos);
+    return tile;
+  }  
+
   static constexpr const char* CFG = R"({
     "type":"slider",
       "dimension": {
-        "count": 24
+        "count": 1
       }
   })";
 

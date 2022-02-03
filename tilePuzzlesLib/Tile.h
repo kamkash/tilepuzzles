@@ -100,7 +100,7 @@ struct Tile {
   Tile(Tile&&) = default;
   Tile(const Tile&) = default;
 
-  void updateVertices() {
+  virtual void updateVertices() {
     // bottom left
     (*quadVertices)[0].position = {topLeft[0], topLeft[1] - size[1], 0.};
 
@@ -116,7 +116,7 @@ struct Tile {
     // logVertices();
   }
 
-  void updateTexCoords(int texIndex, float texWidth) {
+  virtual void updateTexCoords(int texIndex, float texWidth) {
     // bottom left
     (*quadVertices)[0].texCoords = {texWidth * texIndex, 0};
 

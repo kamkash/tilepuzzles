@@ -13,8 +13,8 @@ struct TVertexBuffer {
     indexShapes = (IndexShape*)malloc(numVertShapes * sizeof(IndexShape));
     numVertices = numVertShapes * vertsPerShape;
     numIndices = numVertShapes * indexPerShape;
-    size = sizeof(vertShapes) * numVertShapes;
-    indexSize = sizeof(indexShapes) * numVertShapes;
+    size = sizeof(VertexShape) * numVertShapes;
+    indexSize = sizeof(IndexShape) * numVertShapes;
   }
 
   virtual ~TVertexBuffer() {

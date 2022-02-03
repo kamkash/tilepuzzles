@@ -185,13 +185,13 @@ struct TRenderer {
           .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT3, 24, 32)
           .build(*engine);
       borderVb->setBufferAt(*engine, 0,
-                            VertexBuffer::BufferDescriptor(vbBorder->quadVertices,
+                            VertexBuffer::BufferDescriptor(vbBorder->vertShapes,
                                                            vbBorder->getSize(), nullptr));
       borderIb = IndexBuffer::Builder()
                    .indexCount(vbBorder->numIndices)
                    .bufferType(IndexBuffer::IndexType::USHORT)
                    .build(*engine);
-      borderIb->setBuffer(*engine, IndexBuffer::BufferDescriptor(vbBorder->quadIndicies,
+      borderIb->setBuffer(*engine, IndexBuffer::BufferDescriptor(vbBorder->indexShapes,
 
                                                                  vbBorder->getIndexSize(),
                                                                  nullptr));
@@ -263,7 +263,7 @@ struct TRenderer {
         .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT3, 24, 32)
         .build(*engine);
     vb->setBufferAt(*engine, 0,
-                    VertexBuffer::BufferDescriptor(mesh->vertexBuffer->quadVertices,
+                    VertexBuffer::BufferDescriptor(mesh->vertexBuffer->vertShapes,
                                                    mesh->vertexBuffer->getSize(),
                                                    nullptr));
     ib = IndexBuffer::Builder()
@@ -271,7 +271,7 @@ struct TRenderer {
            .bufferType(IndexBuffer::IndexType::USHORT)
            .build(*engine);
     ib->setBuffer(*engine, IndexBuffer::BufferDescriptor(
-                             mesh->vertexBuffer->quadIndicies,
+                             mesh->vertexBuffer->indexShapes,
                              mesh->vertexBuffer->getIndexSize(), nullptr));
 
     Path matPath = FilamentApp::getRootAssetsPath() + "textures/bakedTexture.filamat";
@@ -337,6 +337,7 @@ struct TRenderer {
 
   App app;
   bool needsDraw = false;
+  Tile* dragTile;
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;

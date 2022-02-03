@@ -5,8 +5,6 @@
 #include "Mesh.h"
 #include "enums.h"
 
-#include "TQuadVertexBuffer.h"
-
 using namespace std;
 using namespace filament;
 using namespace filament::math;

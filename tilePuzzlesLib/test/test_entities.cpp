@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_PREFIX_ALL
 #include "GLogger.h"
 #include "SliderMesh.h"
-#include "TQuadVertexBuffer.h"
 #include "TestUtil.h"
 #include "Tile.h"
 #include "Vertex.h"
@@ -71,8 +70,8 @@ CATCH_TEST_CASE("EntityCreation", "[entity_creation]") {
     sliderMesh.logTiles();
 
     int index = count;
-    tilepuzzles::QuadVertices* pQuad = sliderMesh.vertexBuffer->quadVertices;
-    tilepuzzles::QuadIndices* pIndex = sliderMesh.vertexBuffer->quadIndicies;
+    tilepuzzles::QuadVertices* pQuad = sliderMesh.vertexBuffer->vertShapes;
+    tilepuzzles::QuadIndices* pIndex = sliderMesh.vertexBuffer->indexShapes;
     while (index-- > 0) {
       L.info("****** quad", (*pQuad++)[0].position[0], *(*pIndex++));
     }
