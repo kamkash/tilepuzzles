@@ -9,8 +9,8 @@
 
 #include "App.h"
 #include "TVertexBuffer.h"
-#include "Vertex.h"
 #include "Tile.h"
+#include "Vertex.h"
 #include "enums.h"
 
 #include <filament/Viewport.h>
@@ -22,8 +22,7 @@ using namespace filament::math;
 
 namespace tilepuzzles {
 
-using TQuadVertexBuffer = TVertexBuffer<QuadVertices, QuadIndices, 4, 6>;
-
+template <typename VB, typename T>
 struct Mesh {
 
   Mesh() {
@@ -44,36 +43,36 @@ struct Mesh {
   }
 
   virtual void initVertexBuffers() {
-    vertexBufferBorder.reset(new TQuadVertexBuffer(4));
+    vertexBufferBorder.reset(new VB(4));
     const int tileCount = getTileCount();
-    vertexBuffer.reset(new TQuadVertexBuffer(tileCount));
+    vertexBuffer.reset(new VB(tileCount));
   }
 
-  virtual Tile* const blankTile() {
+  virtual T* const blankTile() {
     return nullptr;
   }
 
-  virtual Direction canSlide(const Tile& tile) {
+  virtual Direction canSlide(const T& tile) {
     return Direction::none;
   }
 
-  virtual void slideTiles(const Tile& tile) {
+  virtual void slideTiles(const T& tile) {
   }
 
-  virtual std::vector<Tile*> rollTiles(const Tile& tile, Direction dir) {
-    return std::vector<Tile*>();
+  virtual std::vector<T*> rollTiles(const T& tile, Direction dir) {
+    return std::vector<T*>();
   }
 
   void logTiles() {
-    std::for_each(std::begin(tiles), std::end(tiles), [](const Tile& t) {
+    std::for_each(std::begin(tiles), std::end(tiles), [](const T& t) {
       t.logVertices();
       t.logIndices();
     });
   }
 
-  Tile* tileAt(int row, int column) {
+  T* tileAt(int row, int column) {
     auto tileIter =
-      std::find_if(tiles.begin(), tiles.end(), [row, column](const Tile& t) {
+      std::find_if(tiles.begin(), tiles.end(), [row, column](const T& t) {
         return row == t.gridCoord.x && column == t.gridCoord.y;
       });
     if (tileIter != tiles.end()) {
@@ -83,7 +82,7 @@ struct Mesh {
     }
   }
 
-  Tile* hitTest(const App& app, const math::float2& viewCoord) {
+  T* hitTest(const App& app, const math::float2& viewCoord) {
     math::mat4 projMat = app.camera->getProjectionMatrix();
     math::mat4 invProjMat = app.camera->inverseProjection(projMat);
     float width = float(app.view->getViewport().width);
@@ -91,7 +90,7 @@ struct Mesh {
     math::float4 normalizedView = {viewCoord.x * 2. / width - 1.,
                                    viewCoord.y * -2. / height + 1., 0., 1.};
     math::float4 clipCoord = invProjMat * normalizedView;
-    auto tileIter = std::find_if(tiles.begin(), tiles.end(), [&clipCoord](const Tile& t) {
+    auto tileIter = std::find_if(tiles.begin(), tiles.end(), [&clipCoord](const T& t) {
       return t.onClick({clipCoord.x, clipCoord.y});
     });
     if (tileIter != tiles.end()) {
@@ -120,7 +119,7 @@ struct Mesh {
         topLeft.y = 1. - r * size.y;
         topLeft.x = -1. + c * size.x;
         const std::string tileId = string("tile") + to_string(r) + to_string(c);
-        Tile tile(tileId, topLeft, size, &vertexBuffer->get(t),
+        T tile(tileId, topLeft, size, &vertexBuffer->get(t),
                   &vertexBuffer->getIndex(t), t, texWidth, indexOffset, {r, c}, t + 1);
         tiles.push_back(tile);
         ++t;
@@ -130,7 +129,7 @@ struct Mesh {
   }
 
   void shuffle() {
-    GameUtil::shuffle(tiles);
+    GameUtil::shuffle<T>(tiles);
   }
 
   bool hasBorder() {
@@ -156,38 +155,38 @@ struct Mesh {
       // top
       topLeft.x = -1. + borderLeft * size.x;
       topLeft.y = 1. - borderTop * size.y;
-      Tile topTile("borderTop", topLeft, horzSize, &vertexBufferBorder->get(0),
+      T topTile("borderTop", topLeft, horzSize, &vertexBufferBorder->get(0),
                    &vertexBufferBorder->getIndex(0), 0, texWidth, 0, {0, 0}, 1);
       borderTiles.push_back(topTile);
 
       // bottom
       topLeft.x = -1. + borderLeft * size.x;
       topLeft.y = 1. - (borderTop * size.y) - (borderHeight * size.y);
-      Tile bottomTile("borderBottom", topLeft, horzSize, &vertexBufferBorder->get(1),
+      T bottomTile("borderBottom", topLeft, horzSize, &vertexBufferBorder->get(1),
                       &vertexBufferBorder->getIndex(1), 0, texWidth, 4, {0, 0}, 2);
       borderTiles.push_back(bottomTile);
 
       // left
       topLeft.x = -1. + borderLeft * size.x;
       topLeft.y = 1. - borderTop * size.y;
-      Tile leftTile("borderLeft", topLeft, vertSize, &vertexBufferBorder->get(2),
+      T leftTile("borderLeft", topLeft, vertSize, &vertexBufferBorder->get(2),
                     &vertexBufferBorder->getIndex(2), 1, texWidth, 8, {0, 0}, 3);
       borderTiles.push_back(leftTile);
 
       // right
       topLeft.x = -1. + (borderLeft * size.x) + (borderWidth * size.x);
       topLeft.y = 1. - borderTop * size.y;
-      Tile rightTile("borderRight", topLeft, vertSize, &vertexBufferBorder->get(3),
+      T rightTile("borderRight", topLeft, vertSize, &vertexBufferBorder->get(3),
                      &vertexBufferBorder->getIndex(3), 1, texWidth, 12, {0, 0}, 4);
       borderTiles.push_back(rightTile);
     }
   }
 
   ConfigMgr configMgr;
-  std::shared_ptr<TQuadVertexBuffer> vertexBuffer;
-  std::shared_ptr<TQuadVertexBuffer> vertexBufferBorder;
-  std::vector<Tile> tiles;
-  std::vector<Tile> borderTiles;
+  std::shared_ptr<VB> vertexBuffer;
+  std::shared_ptr<VB> vertexBufferBorder;
+  std::vector<T> tiles;
+  std::vector<T> borderTiles;
   Logger L;
 };
 } // namespace tilepuzzles

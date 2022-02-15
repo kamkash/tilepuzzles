@@ -17,7 +17,8 @@ int trand(int min, int max) {
   return rand() % max + min;
 }
 
-void shuffle(std::vector<Tile>& tiles) {
+template<typename T>
+void shuffle(std::vector<T>& tiles) {
   int n = tiles.size();
   for (int i = n - 1; i >= 1; --i) {
     int j = trand(0, i);

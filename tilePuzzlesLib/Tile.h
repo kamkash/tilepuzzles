@@ -6,6 +6,9 @@
 #include "enums.h"
 
 #include <math/vec2.h>
+#include <math/mat3.h>
+#include <math/mat4.h>
+#include <math/mathfwd.h>
 
 namespace tilepuzzles {
 
@@ -15,14 +18,14 @@ struct Tile {
        const math::int2& gridCoord, int tileNum)
     : tileId(id), topLeft(topLeft), size(size), quadVertices(pQuad), gridCoord(gridCoord),
       quadIndicies(pIndices), tileNum(tileNum) {
-    _initVertices(texIndex, texWidth);
-    _initIndices(indexOffset);
+    initVertices(texIndex, texWidth);
+    initIndices(indexOffset);
   }
 
   Tile(const std::string& id) : tileId(id) {
   }
 
-  void logVertices() const {
+  virtual void logVertices() const {
     L.info("TileId", tileId, "isBlank", isBlank);
     L.info("Grid Coord", gridCoord.x, gridCoord.y);
     std::for_each(std::begin(*quadVertices), std::end(*quadVertices),
@@ -49,6 +52,8 @@ struct Tile {
     other.gridCoord = {gridCoord.x, gridCoord.y};
     gridCoord = {otherGridCoord.x, otherGridCoord.y};
   }
+
+
 
   void translate(Direction dir, int maxCoord) {
     switch (dir) {
@@ -90,7 +95,7 @@ struct Tile {
     updateVertices();
   }
 
-  bool onClick(const math::float2& coord) const {
+  virtual bool onClick(const math::float2& coord) const {
     return (*quadVertices)[0].position.x <= coord.x &&
            (*quadVertices)[1].position.x >= coord.x &&
            (*quadVertices)[0].position.y <= coord.y &&
@@ -130,13 +135,13 @@ struct Tile {
     (*quadVertices)[3].texCoords = {texWidth * (texIndex + 1), 1};
   }
 
-  void _initVertices(int texIndex, float texWidth) {
+  void initVertices(int texIndex, float texWidth) {
     updateVertices();
     updateTexCoords(texIndex, texWidth);
     // logVertices();
   }
 
-  void _initIndices(int indexOffset) {
+  void initIndices(int indexOffset) {
     (*quadIndicies)[0] = indexOffset;
     (*quadIndicies)[1] = indexOffset + 1;
     (*quadIndicies)[2] = indexOffset + 2;

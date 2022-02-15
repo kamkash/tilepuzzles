@@ -5,6 +5,7 @@
 #include "IOUtil.h"
 #include "Mesh.h"
 #include "Tile.h"
+#include "IRenderer.h"
 
 #include <filament/Camera.h>
 #include <filament/Engine.h>
@@ -40,15 +41,16 @@ using MinFilter = TextureSampler::MinFilter;
 using MagFilter = TextureSampler::MagFilter;
 
 namespace tilepuzzles {
-struct TRenderer {
+template <typename VB, typename T>
+struct TRenderer : IRenderer {
   TRenderer() {
   }
 
   virtual ~TRenderer() {
   }
 
-  virtual Tile* onMouseDown(const float2& viewCoord) = 0;
-  virtual Tile* onMouseUp(const float2& viewCoord) = 0;
+  virtual T* onMouseDown(const float2& viewCoord) = 0;
+  virtual T* onMouseUp(const float2& viewCoord) = 0;
   virtual void onMouseMove(const float2& dragPosition) = 0;
   virtual void initMesh() = 0;
 
@@ -111,7 +113,7 @@ struct TRenderer {
     Engine::destroy(&engine);
   }
 
-  virtual float getAspectRatio() {
+  float getAspectRatio() {
     return float(view->getViewport().width) / float(view->getViewport().height);
   }
 
@@ -123,10 +125,9 @@ struct TRenderer {
   virtual void update(double dt) {
     if (needsDraw) {
       needsDraw = false;
-      QuadVertices* clonedVertices = mesh->vertexBuffer->cloneVertices();
       vb->setBufferAt(
         *engine, 0,
-        VertexBuffer::BufferDescriptor(clonedVertices, mesh->vertexBuffer->getSize(),
+        VertexBuffer::BufferDescriptor(mesh->vertexBuffer->cloneVertices(), mesh->vertexBuffer->getSize(),
                                        (VertexBuffer::BufferDescriptor::Callback)free));
       scene->remove(renderable);
       auto& rcm = engine->getRenderableManager();
@@ -147,7 +148,7 @@ struct TRenderer {
 
   virtual void drawBorder() {
     if (mesh->hasBorder()) {
-      std::shared_ptr<TQuadVertexBuffer> vbBorder = mesh->vertexBufferBorder;
+      std::shared_ptr<VB> vbBorder = mesh->vertexBufferBorder;
       Path path = FilamentApp::getRootAssetsPath() + "textures/border2.png";
       if (!path.exists()) {
         L.error("The texture ", path, " does not exist");
@@ -219,7 +220,7 @@ struct TRenderer {
 
   void drawTiles() {
     L.info("Using root asset path ", FilamentApp::getRootAssetsPath());
-    Path path = FilamentApp::getRootAssetsPath() + "textures/1-30c.png";
+    Path path = FilamentApp::getRootAssetsPath() + "textures/1-30color.png";
     if (!path.exists()) {
       L.error("The texture ", path, " does not exist");
       return;
@@ -311,7 +312,7 @@ struct TRenderer {
     needsDraw = true;
   }
 
-  std::shared_ptr<Mesh> mesh;
+  std::shared_ptr<Mesh<VB,T> > mesh;
 
   Logger L;
   Texture* tex;
@@ -337,7 +338,7 @@ struct TRenderer {
 
   App app;
   bool needsDraw = false;
-  Tile* dragTile;
+  T* dragTile;
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;

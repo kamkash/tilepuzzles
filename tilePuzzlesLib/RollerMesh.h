@@ -3,6 +3,7 @@
 
 #include "GLogger.h"
 #include "Mesh.h"
+#include "Tile.h"
 #include "enums.h"
 
 using namespace std;
@@ -11,7 +12,7 @@ using namespace filament::math;
 
 namespace tilepuzzles {
 
-struct RollerMesh : Mesh {
+struct RollerMesh : Mesh<TQuadVertexBuffer, Tile> {
   RollerMesh() {
   }
 

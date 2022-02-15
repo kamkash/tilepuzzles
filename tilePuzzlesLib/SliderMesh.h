@@ -3,6 +3,7 @@
 
 #include "GLogger.h"
 #include "Mesh.h"
+#include "Tile.h"
 
 using namespace std;
 using namespace filament;
@@ -23,7 +24,7 @@ struct SliderVertexBuffer : TQuadVertexBuffer {
   }
 };
 
-struct SliderMesh : Mesh {
+struct SliderMesh : Mesh<TQuadVertexBuffer, Tile> {
   SliderMesh() {
   }
 

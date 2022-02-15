@@ -30,7 +30,7 @@ struct TVertexBuffer {
     return indexSize;
   }
 
-  const VertexShape* add(int index, const VertexShape& quad) {
+  const VertexShape* put(int index, const VertexShape& quad) {
     const VertexShape* oldValue = vertShapes + index;
     std::copy(std::begin(quad), std::end(quad), std::begin(*(vertShapes + index)));
     return oldValue;
@@ -44,8 +44,9 @@ struct TVertexBuffer {
     return indexShapes[index];
   }
 
-  QuadVertices* cloneVertices() {
-    VertexShape* clonedVertices = (VertexShape*)malloc(numVertShapes * sizeof(VertexShape));
+  VertexShape* cloneVertices() {
+    VertexShape* clonedVertices =
+      (VertexShape*)malloc(numVertShapes * sizeof(VertexShape));
     memcpy(clonedVertices, vertShapes, numVertShapes * sizeof(VertexShape));
     return clonedVertices;
   }
@@ -59,5 +60,7 @@ struct TVertexBuffer {
   size_t indexSize = 0;
   constexpr static Logger L = Logger::getLogger();
 };
+using TQuadVertexBuffer = TVertexBuffer<QuadVertices, QuadIndices, 4, 6>;
+using TriangleVertexBuffer = TVertexBuffer<TriangleVertices, TriangleIndices, 3, 3>;
 } // namespace tilepuzzles
 #endif

@@ -9,6 +9,7 @@
 #include "RollerRenderer.h"
 #include "SliderRenderer.h"
 #include "TRenderer.h"
+#include "IRenderer.h"
 #include "Tile.h"
 
 #include "generated/resources/resources.h"
@@ -106,9 +107,9 @@ struct TAppWin {
    *
    */
   void createRenderer() {
-    renderer = std::shared_ptr<TRenderer>(new SliderRenderer());
-    // renderer = std::shared_ptr<TRenderer>(new RollerRenderer());
-    // renderer = std::shared_ptr<HexSpinRenderer>(new HexSpinRenderer());
+    // renderer = std::shared_ptr<IRenderer>(new SliderRenderer());
+    // renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
+    renderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
   }
 
   /**
@@ -286,7 +287,7 @@ struct TAppWin {
   bool needsDraw = true;
   double time = 0.0;
   double lastDrawTime = 0.0;
-  std::shared_ptr<TRenderer> renderer;
+  std::shared_ptr<IRenderer> renderer;
   SwapChain* swapChain = nullptr;
   Logger L;
 };

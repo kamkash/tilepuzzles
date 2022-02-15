@@ -13,10 +13,14 @@ using namespace filament::math;
 
 namespace tilepuzzles {
 
-using TriangleVertexBuffer = TVertexBuffer<TriangleVertices, TriangleIndices, 3, 3>;
-
-struct HexSpinMesh : Mesh {
+struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
   HexSpinMesh() {
+  }
+
+  virtual int getTileCount() {
+    int rows = configMgr.config["dimension"]["rows"].get<int>();
+    int columns = configMgr.config["dimension"]["columns"].get<int>();
+    return rows * 2 * columns * 3;
   }
 
   virtual void initVertexBuffers() {
@@ -25,19 +29,30 @@ struct HexSpinMesh : Mesh {
   }
 
   virtual void initTiles() {
-    const int tileCount = getTileCount();
-    const int dim = sqrt(tileCount);
+    const float sqrt3o2 = sqrt(3.) / 2.;
+    int rows = configMgr.config["dimension"]["rows"].get<int>();
+    int columns = configMgr.config["dimension"]["columns"].get<int>();
     const float texWidth = 32. / 1024.;
-
-    const Size size = {2. / dim, 2. / dim};
+    int indexOffset = 0;
+    const float a = 2. / columns / 2.;
+    const float h = sqrt3o2 * a;
+    const Size size = {a, h};
     Point topLeft = {-1., 1.};
-    HexTile tile("tile1", topLeft, size, &vertexBuffer->get(0), &vertexBuffer->getIndex(0), 0,
-              texWidth, 0, {0, 0}, 1);
-    tiles.push_back(tile);
-  }
 
-  std::shared_ptr<TriangleVertexBuffer> vertexBuffer;
-  std::vector<HexTile> hexTiles;
+    int t = 0;
+    for (int r = 0; r < rows * 2; ++r) {
+      for (int c = 0; c < columns * 3; ++c) {
+        topLeft.x = -1. + c * a * .5;
+        topLeft.y = 1. - r * h;
+        const std::string tileId = string("tile") + to_string(r) + to_string(c);
+        HexTile tile(tileId, topLeft, size, &vertexBuffer->get(t), &vertexBuffer->getIndex(t), t, texWidth,
+                     indexOffset, {r, c}, t + 1);
+        tiles.push_back(tile);
+        indexOffset += 3;
+        ++t;
+      }
+    }
+  }
 };
 
 } // namespace tilepuzzles

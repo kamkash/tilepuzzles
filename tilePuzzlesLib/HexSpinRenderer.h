@@ -16,10 +16,10 @@ using namespace filament::math;
 
 namespace tilepuzzles {
 
-struct HexSpinRenderer : TRenderer {
+struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   HexSpinRenderer() {
-    mesh = std::shared_ptr<Mesh>(new HexSpinMesh());
+    mesh = std::shared_ptr<Mesh<TriangleVertexBuffer, HexTile> >(new HexSpinMesh());
   }
 
   virtual void initMesh() {
@@ -29,20 +29,21 @@ struct HexSpinRenderer : TRenderer {
   virtual void onMouseMove(const float2& dragPosition) {
   }
 
-  virtual Tile* onMouseDown(const math::float2& pos) {
+  virtual HexTile* onMouseDown(const math::float2& pos) {
     dragTile = mesh->hitTest(app, pos);
     return dragTile;
   }
 
-  virtual Tile* onMouseUp(const math::float2& pos) {
-    Tile* tile = mesh->hitTest(app, pos);
+  virtual HexTile* onMouseUp(const math::float2& pos) {
+    HexTile* tile = mesh->hitTest(app, pos);
     return tile;
   }  
 
   static constexpr const char* CFG = R"({
-    "type":"slider",
+    "type":"HexSpinner",
       "dimension": {
-        "count": 1
+        "rows": 8,
+        "columns": 5
       }
   })";
 

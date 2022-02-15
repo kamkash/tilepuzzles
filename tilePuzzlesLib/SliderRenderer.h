@@ -16,10 +16,10 @@ using namespace filament::math;
 
 namespace tilepuzzles {
 
-struct SliderRenderer : TRenderer {
+struct SliderRenderer : TRenderer<TQuadVertexBuffer, Tile> {
 
   SliderRenderer() {
-    mesh = std::shared_ptr<Mesh>(new SliderMesh());
+    mesh = std::shared_ptr<Mesh<TQuadVertexBuffer, Tile> >(new SliderMesh());
   }
 
   virtual void onMouseMove(const float2& dragPosition) {
