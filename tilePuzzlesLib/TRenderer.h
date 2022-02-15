@@ -40,6 +40,10 @@ using utils::Path;
 using MinFilter = TextureSampler::MinFilter;
 using MagFilter = TextureSampler::MagFilter;
 
+
+static constexpr Engine::Backend kBackend = Engine::Backend::OPENGL;
+
+
 namespace tilepuzzles {
 template <typename VB, typename T>
 struct TRenderer : IRenderer {
@@ -76,6 +80,7 @@ struct TRenderer : IRenderer {
 
   virtual void init() {
     initMesh();
+    // engine = Engine::create(kBackend );
     engine = Engine::create();
     filaRenderer = engine->createRenderer();
     utils::EntityManager& em = utils::EntityManager::get();
@@ -218,9 +223,14 @@ struct TRenderer : IRenderer {
     drawBorder();
   }
 
-  void drawTiles() {
+  virtual Path loadTilesTexture() {
     L.info("Using root asset path ", FilamentApp::getRootAssetsPath());
-    Path path = FilamentApp::getRootAssetsPath() + "textures/1-30color.png";
+    Path path = FilamentApp::getRootAssetsPath() + "textures/1-30c.png";
+    return path;
+  }
+
+  void drawTiles() {
+    Path path = loadTilesTexture();
     if (!path.exists()) {
       L.error("The texture ", path, " does not exist");
       return;

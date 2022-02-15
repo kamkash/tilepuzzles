@@ -35,10 +35,13 @@ struct HexTile : Tile {
     (*triangleIndices)[2] = indexOffset + 2;
   }
 
-  virtual void updateVertices() {
+  bool shiftColumnGroup() {
     float shift = trunc(gridCoord.y / 3.);
+    return ((int)shift % 2);
+  }
 
-    if ((int)shift % 2) {
+  virtual void updateVertices() {
+    if (shiftColumnGroup()) {
       topLeft[1] -= size[1];
     }
 
@@ -97,8 +100,37 @@ struct HexTile : Tile {
     (*triangleVertices)[2].texCoords = {texWidth * (texIndex + .9), .4};
   }
 
+  /* A utility function to calculate area of triangle formed by (x1, y1),
+  (x2, y2) and (x3, y3) */
+  float area(const math::float3& v1, const math::float3& v2, const math::float3& v3) const {
+    return abs((v1[0] * (v2[1] - v3[1]) + v2[0] * (v3[1] - v1[1]) + v3[0] * (v1[1] - v2[1])) / 2.0);
+  }
+
+  /* A function to check whether point P(x, y) lies inside the triangle formed
+  by A(x1, y1), B(x2, y2) and C(x3, y3) */
+  bool isInside(const math::float3& v1, const math::float3& v2, const math::float3& v3,
+                const math::float3& p) const {
+    /* Calculate area of triangle ABC */
+    float A = area(v1, v2, v3);
+
+    /* Calculate area of triangle PBC */
+    float A1 = area(p, v2, v3);
+
+    /* Calculate area of triangle PAC */
+    float A2 = area(v1, p, v3);
+
+    /* Calculate area of triangle PAB */
+    float A3 = area(v1, v2, p);
+
+    /* Check if sum of A1, A2 and A3 is same as A */
+    // return (A == A1 + A2 + A3);
+    return abs(A - (A1 + A2 + A3)) <= EPS;
+  }
+
   virtual bool onClick(const math::float2& coord) const {
-    return false;
+    math::float3 p3 = math::float3({coord[0], coord[1], 0.});
+    return isInside((*triangleVertices)[0].position, (*triangleVertices)[1].position,
+                    (*triangleVertices)[2].position, p3);
   }
 
   virtual void logVertices() const {
@@ -118,6 +150,7 @@ struct HexTile : Tile {
   TriangleVertices* triangleVertices;
   TriangleIndices* triangleIndices;
   constexpr static Logger L = Logger::getLogger();
+  constexpr static float EPS = 0.001F;
   int hexNum;
 }; // namespace tilepuzzles
 

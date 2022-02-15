@@ -82,7 +82,7 @@ struct Mesh {
     }
   }
 
-  T* hitTest(const App& app, const math::float2& viewCoord) {
+  virtual T* hitTest(const App& app, const math::float2& viewCoord) {
     math::mat4 projMat = app.camera->getProjectionMatrix();
     math::mat4 invProjMat = app.camera->inverseProjection(projMat);
     float width = float(app.view->getViewport().width);

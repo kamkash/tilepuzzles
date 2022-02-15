@@ -31,6 +31,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   virtual HexTile* onMouseDown(const math::float2& pos) {
     dragTile = mesh->hitTest(app, pos);
+    if (dragTile) dragTile->logVertices();
     return dragTile;
   }
 
@@ -39,11 +40,17 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     return tile;
   }  
 
+  virtual Path loadTilesTexture() {
+    L.info("Using root asset path ", FilamentApp::getRootAssetsPath());
+    Path path = FilamentApp::getRootAssetsPath() + "textures/1-30color.png";
+    return path;
+  }  
+
   static constexpr const char* CFG = R"({
     "type":"HexSpinner",
       "dimension": {
-        "rows": 8,
-        "columns": 5
+        "rows": 5,
+        "columns": 7
       }
   })";
 
