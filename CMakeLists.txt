@@ -14,4 +14,3 @@ target_include_directories(tile_puzzles PUBLIC
                           "${PROJECT_BINARY_DIR}"
                           "${PROJECT_SOURCE_DIR}/tilePuzzlesLib"
                           )
-

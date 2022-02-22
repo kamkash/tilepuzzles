@@ -25,9 +25,12 @@ struct HexTile : Tile {
     this->gridCoord = gridCoord;
     this->tileNum = tileNum;
     initVertices(texIndex, texWidth);
-    logVertices();
     initIndices(indexOffset);
+    // logVertices();
   }
+
+  // HexTile(HexTile&&) = default;
+  // HexTile(const HexTile&) = default;
 
   virtual void initIndices(int indexOffset) {
     (*triangleIndices)[0] = indexOffset;
@@ -54,13 +57,13 @@ struct HexTile : Tile {
     const math::float3 offset = -1. * math::float3({topLeft[0] + size[0] * .5, topLeft[1] - size[1], 0.});
     const math::float3 yoffset = {0., size[1], 0.};
 
-    math::float3 invTri[] = {GeoUtil::rotate(tri[0], math::F_PI, {0., 0., 1.}, offset),
-                             GeoUtil::rotate(tri[1], math::F_PI, {0., 0., 1.}, offset),
-                             GeoUtil::rotate(tri[2], math::F_PI, {0., 0., 1.}, offset)};
+    math::float3 invTri[] = {geo.rotate(tri[0], math::F_PI, {0., 0., 1.}, offset),
+                             geo.rotate(tri[1], math::F_PI, {0., 0., 1.}, offset),
+                             geo.rotate(tri[2], math::F_PI, {0., 0., 1.}, offset)};
 
-    invTri[0] = GeoUtil::translate(invTri[0], yoffset);
-    invTri[1] = GeoUtil::translate(invTri[1], yoffset);
-    invTri[2] = GeoUtil::translate(invTri[2], yoffset);
+    invTri[0] = geo.translate(invTri[0], yoffset);
+    invTri[1] = geo.translate(invTri[1], yoffset);
+    invTri[2] = geo.translate(invTri[2], yoffset);
 
     if (gridCoord.x % 2) {
       if (gridCoord.y % 3 == 0) {
@@ -94,7 +97,7 @@ struct HexTile : Tile {
   }
 
   virtual void updateTexCoords(int texIndex, float texWidth) {
-    texIndex = texIndex % 32;
+    texIndex = texIndex % 8;
     (*triangleVertices)[0].texCoords = {texWidth * texIndex, 0};
     (*triangleVertices)[1].texCoords = {texWidth * (texIndex + .9), 0};
     (*triangleVertices)[2].texCoords = {texWidth * (texIndex + .9), .4};
@@ -134,7 +137,7 @@ struct HexTile : Tile {
   }
 
   virtual void logVertices() const {
-    L.info("TileId", tileId, "isBlank", isBlank);
+    L.info("TileId", tileId, "isBlank", isBlank, "groupKey", groupKey);
     L.info("Grid Coord", gridCoord.x, gridCoord.y);
     std::for_each(std::begin(*triangleVertices), std::end(*triangleVertices), [](const Vertex& v) {
       L.info("pos:", v.position[0], v.position[1], "texCoords:", v.texCoords[0], v.texCoords[1]);
@@ -147,11 +150,37 @@ struct HexTile : Tile {
                   [](const uint16_t& idx) { L.info("index:", idx); });
   }
 
+  virtual void rotateAtAnchor(math::float2 anch, float angle) {
+    const math::float3 offset = -1. * math::float3({anch.x, anch.y, 0.});
+    math::float3 rotTri[] = {geo.rotate((*triangleVertices)[0].position, angle, {0., 0., 1.}, offset),
+                             geo.rotate((*triangleVertices)[1].position, angle, {0., 0., 1.}, offset),
+                             geo.rotate((*triangleVertices)[2].position, angle, {0., 0., 1.}, offset)};
+    (*triangleVertices)[0].position = rotTri[0];
+    (*triangleVertices)[1].position = rotTri[1];
+    (*triangleVertices)[2].position = rotTri[2];
+  }
+
+  bool inverted() {
+    return (*triangleVertices)[2].position[1] < (*triangleVertices)[0].position[1];
+  }
+
+  bool hasVertex(const math::float2& vert) {
+    return (abs(getVert<0>().x - vert.x) <= EPS && abs(getVert<0>().y - vert.y) <= EPS) ||
+           (abs(getVert<1>().x - vert.x) <= EPS && abs(getVert<1>().y - vert.y) <= EPS) ||
+           (abs(getVert<2>().x - vert.x) <= EPS && abs(getVert<2>().y - vert.y) <= EPS) ;
+  }
+
+  template <int index>
+  math::float3 getVert() {
+    return (*triangleVertices)[index].position;
+  }
+
   TriangleVertices* triangleVertices;
   TriangleIndices* triangleIndices;
   constexpr static Logger L = Logger::getLogger();
   constexpr static float EPS = 0.001F;
-  int hexNum;
+  GeoUtil::GeoUtil geo;
+  std::string groupKey;
 }; // namespace tilepuzzles
 
 } // namespace tilepuzzles

@@ -3,6 +3,6 @@ export GLOG_log_dir=`pwd`/log
 export GLOG_alsologtostderr=1
 export GLOG_colorlogtostderr=1
 #code-insiders --disable-gpu
-#code
-code-insiders
+code
+#code-insiders
 

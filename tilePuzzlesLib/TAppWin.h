@@ -6,10 +6,10 @@
 #include "GLogger.h"
 #include "GameUtil.h"
 #include "HexSpinRenderer.h"
+#include "IRenderer.h"
 #include "RollerRenderer.h"
 #include "SliderRenderer.h"
 #include "TRenderer.h"
-#include "IRenderer.h"
 #include "Tile.h"
 
 #include "generated/resources/resources.h"
@@ -54,8 +54,7 @@ static constexpr int WINDOW_WIDTH = 640;
 static constexpr int WINDOW_HEIGHT = 480;
 static constexpr int WINDOW_X_POS = 500;
 static constexpr int WINDOW_Y_POS = 500;
-static constexpr uint32_t WINDOW_FLAGS =
-  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+static constexpr uint32_t WINDOW_FLAGS = SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
 
 struct TAppWin {
 
@@ -73,8 +72,8 @@ struct TAppWin {
 
   void createWinow() {
     auto title = std::string("Tile Puzzles");
-    sdl_window = SDL_CreateWindow(title.c_str(), WINDOW_X_POS, WINDOW_Y_POS, WINDOW_WIDTH,
-                                  WINDOW_HEIGHT, WINDOW_FLAGS);
+    sdl_window =
+      SDL_CreateWindow(title.c_str(), WINDOW_X_POS, WINDOW_Y_POS, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_FLAGS);
   }
 
   // ---- cleanup ----
@@ -206,17 +205,19 @@ struct TAppWin {
             break;
 
           case SDL_MOUSEBUTTONDOWN:
+
             switch (event.button.button) {
               case SDL_BUTTON_LEFT: {
-                math::float2 mouseDownPos = {float(event.button.x),
-                                             float(event.button.y)};
+                math::float2 mouseDownPos = {float(event.button.x), float(event.button.y)};
                 renderer->onMouseDown(mouseDownPos);
                 buttonDown = true;
                 break;
               }
 
               case SDL_BUTTON_RIGHT:
-                renderer->shuffle();
+                // renderer->shuffle();
+                math::float2 mouseDownPos = {float(event.button.x), float(event.button.y)};
+                renderer->onRightMouseDown(mouseDownPos);
                 break;
             }
             break;
@@ -259,8 +260,7 @@ struct TAppWin {
         }
       }
       Uint64 endTicks = SDL_GetPerformanceCounter();
-      const double dt =
-        lastTime > 0 ? (double(endTicks - lastTime) / kCounterFrequency) : (1.0 / 60.0);
+      const double dt = lastTime > 0 ? (double(endTicks - lastTime) / kCounterFrequency) : (1.0 / 60.0);
       lastTime = endTicks;
 
       time += dt;

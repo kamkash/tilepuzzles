@@ -54,6 +54,8 @@ struct Tile {
   }
 
 
+  virtual void rotateAtAnchor(math::float2 anch, float angle) {    
+  }
 
   void translate(Direction dir, int maxCoord) {
     switch (dir) {
@@ -102,8 +104,8 @@ struct Tile {
            (*quadVertices)[2].position.y >= coord.y;
   }
 
-  Tile(Tile&&) = default;
-  Tile(const Tile&) = default;
+  // Tile(Tile&&) = default;
+  // Tile(const Tile&) = default;
 
   virtual void updateVertices() {
     // bottom left

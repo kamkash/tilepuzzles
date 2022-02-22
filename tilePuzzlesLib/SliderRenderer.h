@@ -3,8 +3,8 @@
 
 #include "App.h"
 #include "GLogger.h"
-#include "TRenderer.h"
 #include "SliderMesh.h"
+#include "TRenderer.h"
 #include "Tile.h"
 
 #include <functional>
@@ -19,23 +19,31 @@ namespace tilepuzzles {
 struct SliderRenderer : TRenderer<TQuadVertexBuffer, Tile> {
 
   SliderRenderer() {
-    mesh = std::shared_ptr<Mesh<TQuadVertexBuffer, Tile> >(new SliderMesh());
+    mesh = std::shared_ptr<Mesh<TQuadVertexBuffer, Tile>>(new SliderMesh());
   }
 
   virtual void onMouseMove(const float2& dragPosition) {
   }
 
   virtual Tile* onMouseUp(const float2& pos) {
-    Tile* tile = mesh->hitTest(app, pos);
+    math::float3 clipCoord = normalizeViewCoord(pos);
+    Tile* tile = mesh->hitTest(clipCoord);
     return tile;
   }
 
   virtual Tile* onMouseDown(const float2& pos) {
-    Tile* tile = mesh->hitTest(app, pos);
+    math::float3 clipCoord = normalizeViewCoord(pos);
+    Tile* tile = mesh->hitTest(clipCoord);
     if (tile) {
       mesh->slideTiles(*tile);
       needsDraw = true;
     }
+    return tile;
+  }
+
+  virtual Tile* onRightMouseDown(const float2& viewCoord) {
+    math::float3 clipCoord = normalizeViewCoord(viewCoord);
+    Tile* tile = mesh->hitTest(clipCoord);
     return tile;
   }
 

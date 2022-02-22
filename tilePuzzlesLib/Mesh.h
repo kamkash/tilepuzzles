@@ -16,6 +16,8 @@
 #include <filament/Viewport.h>
 #include <math/mat4.h>
 
+#include "GeoUtil.h"
+
 using namespace std;
 using namespace filament;
 using namespace filament::math;
@@ -63,6 +65,9 @@ struct Mesh {
     return std::vector<T*>();
   }
 
+  virtual void rotateTileGroup(const std::tuple<math::float2, std::vector<T>>& tileGroup, float angle) {
+  }
+
   void logTiles() {
     std::for_each(std::begin(tiles), std::end(tiles), [](const T& t) {
       t.logVertices();
@@ -71,10 +76,9 @@ struct Mesh {
   }
 
   T* tileAt(int row, int column) {
-    auto tileIter =
-      std::find_if(tiles.begin(), tiles.end(), [row, column](const T& t) {
-        return row == t.gridCoord.x && column == t.gridCoord.y;
-      });
+    auto tileIter = std::find_if(tiles.begin(), tiles.end(), [row, column](const T& t) {
+      return row == t.gridCoord.x && column == t.gridCoord.y;
+    });
     if (tileIter != tiles.end()) {
       return &*tileIter;
     } else {
@@ -82,14 +86,7 @@ struct Mesh {
     }
   }
 
-  virtual T* hitTest(const App& app, const math::float2& viewCoord) {
-    math::mat4 projMat = app.camera->getProjectionMatrix();
-    math::mat4 invProjMat = app.camera->inverseProjection(projMat);
-    float width = float(app.view->getViewport().width);
-    float height = float(app.view->getViewport().height);
-    math::float4 normalizedView = {viewCoord.x * 2. / width - 1.,
-                                   viewCoord.y * -2. / height + 1., 0., 1.};
-    math::float4 clipCoord = invProjMat * normalizedView;
+  virtual T* hitTest(const math::float3& clipCoord) {
     auto tileIter = std::find_if(tiles.begin(), tiles.end(), [&clipCoord](const T& t) {
       return t.onClick({clipCoord.x, clipCoord.y});
     });
@@ -98,6 +95,16 @@ struct Mesh {
     } else {
       return nullptr;
     }
+  }
+
+  math::float4 normalizeViewCoord(const App& app, const math::float2& viewCoord) const {
+    math::mat4 projMat = app.camera->getProjectionMatrix();
+    math::mat4 invProjMat = app.camera->inverseProjection(projMat);
+    float width = float(app.view->getViewport().width);
+    float height = float(app.view->getViewport().height);
+    math::float4 normalizedView = {viewCoord.x * 2. / width - 1., viewCoord.y * -2. / height + 1., 0., 1.};
+    math::float4 clipCoord = invProjMat * normalizedView;
+    return clipCoord;
   }
 
   virtual int getTileCount() {
@@ -119,8 +126,8 @@ struct Mesh {
         topLeft.y = 1. - r * size.y;
         topLeft.x = -1. + c * size.x;
         const std::string tileId = string("tile") + to_string(r) + to_string(c);
-        T tile(tileId, topLeft, size, &vertexBuffer->get(t),
-                  &vertexBuffer->getIndex(t), t, texWidth, indexOffset, {r, c}, t + 1);
+        T tile(tileId, topLeft, size, &vertexBuffer->get(t), &vertexBuffer->getIndex(t), t, texWidth,
+               indexOffset, {r, c}, t + 1);
         tiles.push_back(tile);
         ++t;
         indexOffset += 4;
@@ -155,38 +162,79 @@ struct Mesh {
       // top
       topLeft.x = -1. + borderLeft * size.x;
       topLeft.y = 1. - borderTop * size.y;
-      T topTile("borderTop", topLeft, horzSize, &vertexBufferBorder->get(0),
-                   &vertexBufferBorder->getIndex(0), 0, texWidth, 0, {0, 0}, 1);
+      T topTile("borderTop", topLeft, horzSize, &vertexBufferBorder->get(0), &vertexBufferBorder->getIndex(0),
+                0, texWidth, 0, {0, 0}, 1);
       borderTiles.push_back(topTile);
 
       // bottom
       topLeft.x = -1. + borderLeft * size.x;
       topLeft.y = 1. - (borderTop * size.y) - (borderHeight * size.y);
       T bottomTile("borderBottom", topLeft, horzSize, &vertexBufferBorder->get(1),
-                      &vertexBufferBorder->getIndex(1), 0, texWidth, 4, {0, 0}, 2);
+                   &vertexBufferBorder->getIndex(1), 0, texWidth, 4, {0, 0}, 2);
       borderTiles.push_back(bottomTile);
 
       // left
       topLeft.x = -1. + borderLeft * size.x;
       topLeft.y = 1. - borderTop * size.y;
       T leftTile("borderLeft", topLeft, vertSize, &vertexBufferBorder->get(2),
-                    &vertexBufferBorder->getIndex(2), 1, texWidth, 8, {0, 0}, 3);
+                 &vertexBufferBorder->getIndex(2), 1, texWidth, 8, {0, 0}, 3);
       borderTiles.push_back(leftTile);
 
       // right
       topLeft.x = -1. + (borderLeft * size.x) + (borderWidth * size.x);
       topLeft.y = 1. - borderTop * size.y;
       T rightTile("borderRight", topLeft, vertSize, &vertexBufferBorder->get(3),
-                     &vertexBufferBorder->getIndex(3), 1, texWidth, 12, {0, 0}, 4);
+                  &vertexBufferBorder->getIndex(3), 1, texWidth, 12, {0, 0}, 4);
       borderTiles.push_back(rightTile);
     }
   }
 
+  std::tuple<math::float2, std::vector<T>> nearestAnchorGroup(const math::float2& point) {
+    auto init = std::tuple<math::float2, std::vector<T>>({100., 100.}, std::vector<T>());
+    auto res = std::reduce(tileGroups.begin(), tileGroups.end(), init, [&point, this](auto a, auto b) {
+      math::float2 af = std::get<0>(a);
+      math::float2 bf = std::get<0>(b);
+      float adist = geo.tdist({point.x, point.y, 0.}, {af.x, af.y, 0.});
+      float bdist = geo.tdist({point.x, point.y, 0.}, {bf.x, bf.y, 0.});
+      return adist < bdist ? a : b;
+    });
+    return res;
+  }
+
+  void addAnchor(const math::float2& point) {
+    std::vector<T> anchTiles;
+    std::copy_if(tiles.begin(), tiles.end(), std::back_inserter(anchTiles),
+                 [&point](T& t) { return t.hasVertex(point); });
+    if (anchTiles.size() == 6) {
+      std::tuple<math::float2, std::vector<T>> t = {point, anchTiles};
+      tileGroups.push_back(t);
+    }
+  }
+
+  void collectAnchors() {
+    tileGroups.clear();
+    Size size = tiles[0].size;
+    int rows = 2 / size.y;
+    int columns = 2 / size.x;
+    rows *= 2;
+    columns *= 3;
+    math::float2 point;
+    for (int r = 0; r < rows; ++r) {
+      for (int c = 0; c < columns; ++c) {
+        point.x = -1. + c * size.x * .5;
+        point.y = 1. - r * size.y;
+        addAnchor(point);
+      }
+    }
+  }
+
+  GeoUtil::GeoUtil geo;
   ConfigMgr configMgr;
   std::shared_ptr<VB> vertexBuffer;
   std::shared_ptr<VB> vertexBufferBorder;
   std::vector<T> tiles;
   std::vector<T> borderTiles;
+  std::vector<std::tuple<math::float2, std::vector<T>>> tileGroups;
   Logger L;
 };
 } // namespace tilepuzzles

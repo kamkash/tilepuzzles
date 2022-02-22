@@ -3,9 +3,9 @@
 
 #include "App.h"
 #include "IOUtil.h"
+#include "IRenderer.h"
 #include "Mesh.h"
 #include "Tile.h"
-#include "IRenderer.h"
 
 #include <filament/Camera.h>
 #include <filament/Engine.h>
@@ -40,9 +40,7 @@ using utils::Path;
 using MinFilter = TextureSampler::MinFilter;
 using MagFilter = TextureSampler::MagFilter;
 
-
 static constexpr Engine::Backend kBackend = Engine::Backend::OPENGL;
-
 
 namespace tilepuzzles {
 template <typename VB, typename T>
@@ -54,6 +52,7 @@ struct TRenderer : IRenderer {
   }
 
   virtual T* onMouseDown(const float2& viewCoord) = 0;
+  virtual T* onRightMouseDown(const float2& viewCoord) = 0;
   virtual T* onMouseUp(const float2& viewCoord) = 0;
   virtual void onMouseMove(const float2& dragPosition) = 0;
   virtual void initMesh() = 0;
@@ -68,8 +67,8 @@ struct TRenderer : IRenderer {
   virtual void resize(int width, int height) {
     view->setViewport({0, 0, uint32_t(width), uint32_t(height)});
     const float aspect = getAspectRatio();
-    camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom,
-                          zoom, kNearPlane, kFarPlane);
+    camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
+                          kFarPlane);
   }
 
   virtual void executeEngine() {
@@ -130,10 +129,10 @@ struct TRenderer : IRenderer {
   virtual void update(double dt) {
     if (needsDraw) {
       needsDraw = false;
-      vb->setBufferAt(
-        *engine, 0,
-        VertexBuffer::BufferDescriptor(mesh->vertexBuffer->cloneVertices(), mesh->vertexBuffer->getSize(),
-                                       (VertexBuffer::BufferDescriptor::Callback)free));
+      vb->setBufferAt(*engine, 0,
+                      VertexBuffer::BufferDescriptor(mesh->vertexBuffer->cloneVertices(),
+                                                     mesh->vertexBuffer->getSize(),
+                                                     (VertexBuffer::BufferDescriptor::Callback)free));
       scene->remove(renderable);
       auto& rcm = engine->getRenderableManager();
       rcm.destroy(renderable);
@@ -141,8 +140,7 @@ struct TRenderer : IRenderer {
       RenderableManager::Builder(1)
         .boundingBox({{-1, -1, -1}, {1, 1, 1}})
         .material(0, matInstance)
-        .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0,
-                  mesh->vertexBuffer->numIndices)
+        .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0, mesh->vertexBuffer->numIndices)
         .culling(false)
         .receiveShadows(false)
         .castShadows(false)
@@ -166,12 +164,11 @@ struct TRenderer : IRenderer {
         return;
       }
       L.info("Loaded texture: y", w, "x", h);
-      Texture::PixelBufferDescriptor buffer(
-        data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::UBYTE,
-        (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
+      Texture::PixelBufferDescriptor buffer(data, size_t(w * h * 4), Texture::Format::RGBA,
+                                            Texture::Type::UBYTE,
+                                            (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
 
-      static_assert(sizeof(Vertex) == (4 * 3) + (4 * 3) + (4 * 2),
-                    "Strange vertex size.");
+      static_assert(sizeof(Vertex) == (4 * 3) + (4 * 3) + (4 * 2), "Strange vertex size.");
       borderTex = Texture::Builder()
                     .width(uint32_t(w))
                     .height(uint32_t(h))
@@ -182,25 +179,21 @@ struct TRenderer : IRenderer {
       borderTex->setImage(*engine, 0, std::move(buffer));
       TextureSampler sampler(MinFilter::LINEAR, MagFilter::LINEAR);
       // Create quad renderable
-      borderVb =
-        VertexBuffer::Builder()
-          .vertexCount(vbBorder->numVertices)
-          .bufferCount(1)
-          .attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0,
-                     32)
-          .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT3, 24, 32)
-          .build(*engine);
-      borderVb->setBufferAt(*engine, 0,
-                            VertexBuffer::BufferDescriptor(vbBorder->vertShapes,
-                                                           vbBorder->getSize(), nullptr));
+      borderVb = VertexBuffer::Builder()
+                   .vertexCount(vbBorder->numVertices)
+                   .bufferCount(1)
+                   .attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, 32)
+                   .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT3, 24, 32)
+                   .build(*engine);
+      borderVb->setBufferAt(
+        *engine, 0, VertexBuffer::BufferDescriptor(vbBorder->vertShapes, vbBorder->getSize(), nullptr));
       borderIb = IndexBuffer::Builder()
                    .indexCount(vbBorder->numIndices)
                    .bufferType(IndexBuffer::IndexType::USHORT)
                    .build(*engine);
       borderIb->setBuffer(*engine, IndexBuffer::BufferDescriptor(vbBorder->indexShapes,
 
-                                                                 vbBorder->getIndexSize(),
-                                                                 nullptr));
+                                                                 vbBorder->getIndexSize(), nullptr));
 
       borderMatInstance = material->createInstance();
       borderMatInstance->setParameter("albedo", borderTex, sampler);
@@ -208,8 +201,7 @@ struct TRenderer : IRenderer {
       RenderableManager::Builder(1)
         .boundingBox({{-1, -1, -1}, {1, 1, 1}})
         .material(0, borderMatInstance)
-        .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, borderVb, borderIb, 0,
-                  vbBorder->numIndices)
+        .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, borderVb, borderIb, 0, vbBorder->numIndices)
         .culling(false)
         .receiveShadows(false)
         .castShadows(false)
@@ -242,9 +234,9 @@ struct TRenderer : IRenderer {
       return;
     }
     L.info("Loaded texture: y", w, "x", h);
-    Texture::PixelBufferDescriptor buffer(
-      data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::UBYTE,
-      (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
+    Texture::PixelBufferDescriptor buffer(data, size_t(w * h * 4), Texture::Format::RGBA,
+                                          Texture::Type::UBYTE,
+                                          (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
 
     static_assert(sizeof(Vertex) == (4 * 3) + (4 * 3) + (4 * 2), "Strange vertex size.");
     tex = Texture::Builder()
@@ -265,25 +257,21 @@ struct TRenderer : IRenderer {
     view->setCamera(camera);
 
     // Create quad renderable
-    vb =
-      VertexBuffer::Builder()
-        .vertexCount(mesh->vertexBuffer->numVertices)
-        .bufferCount(1)
-        .attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0,
-                   32)
-        .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT3, 24, 32)
-        .build(*engine);
-    vb->setBufferAt(*engine, 0,
-                    VertexBuffer::BufferDescriptor(mesh->vertexBuffer->vertShapes,
-                                                   mesh->vertexBuffer->getSize(),
-                                                   nullptr));
+    vb = VertexBuffer::Builder()
+           .vertexCount(mesh->vertexBuffer->numVertices)
+           .bufferCount(1)
+           .attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, 32)
+           .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT3, 24, 32)
+           .build(*engine);
+    vb->setBufferAt(
+      *engine, 0,
+      VertexBuffer::BufferDescriptor(mesh->vertexBuffer->vertShapes, mesh->vertexBuffer->getSize(), nullptr));
     ib = IndexBuffer::Builder()
            .indexCount(mesh->vertexBuffer->numIndices)
            .bufferType(IndexBuffer::IndexType::USHORT)
            .build(*engine);
-    ib->setBuffer(*engine, IndexBuffer::BufferDescriptor(
-                             mesh->vertexBuffer->indexShapes,
-                             mesh->vertexBuffer->getIndexSize(), nullptr));
+    ib->setBuffer(*engine, IndexBuffer::BufferDescriptor(mesh->vertexBuffer->indexShapes,
+                                                         mesh->vertexBuffer->getIndexSize(), nullptr));
 
     Path matPath = FilamentApp::getRootAssetsPath() + "textures/bakedTexture.filamat";
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath);
@@ -295,26 +283,23 @@ struct TRenderer : IRenderer {
     RenderableManager::Builder(1)
       .boundingBox({{-1, -1, -1}, {1, 1, 1}})
       .material(0, matInstance)
-      .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0,
-                mesh->vertexBuffer->numIndices)
+      .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0, mesh->vertexBuffer->numIndices)
       .culling(false)
       .receiveShadows(false)
       .castShadows(false)
       .build(*engine, renderable);
     scene->addEntity(renderable);
     const float aspect = getAspectRatio();
-    camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom,
-                          zoom, kNearPlane, kFarPlane);
+    camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
+                          kFarPlane);
   }
 
   virtual void animate(double now) {
     auto& tcm = engine->getTransformManager();
-    tcm.setTransform(
-      tcm.getInstance(renderable),
-      filament::math::mat4f::rotation(now, filament::math::float3{1, 0, 0}));
-    tcm.setTransform(
-      tcm.getInstance(borderRenderable),
-      filament::math::mat4f::rotation(now, filament::math::float3{1, 0, 0}));
+    tcm.setTransform(tcm.getInstance(renderable),
+                     filament::math::mat4f::rotation(now, filament::math::float3{1, 0, 0}));
+    tcm.setTransform(tcm.getInstance(borderRenderable),
+                     filament::math::mat4f::rotation(now, filament::math::float3{1, 0, 0}));
   }
 
   virtual void shuffle() {
@@ -322,7 +307,17 @@ struct TRenderer : IRenderer {
     needsDraw = true;
   }
 
-  std::shared_ptr<Mesh<VB,T> > mesh;
+  math::float3 normalizeViewCoord(const math::float2& viewCoord) const {
+    math::mat4 projMat = app.camera->getProjectionMatrix();
+    math::mat4 invProjMat = app.camera->inverseProjection(projMat);
+    float width = float(app.view->getViewport().width);
+    float height = float(app.view->getViewport().height);
+    math::float4 normalizedView = {viewCoord.x * 2. / width - 1., viewCoord.y * -2. / height + 1., 0., 1.};
+    math::float4 clipCoord = invProjMat * normalizedView;
+    return {clipCoord.x, clipCoord.y, clipCoord.z};
+  }
+
+  std::shared_ptr<Mesh<VB, T>> mesh;
 
   Logger L;
   Texture* tex;
@@ -349,6 +344,7 @@ struct TRenderer : IRenderer {
   App app;
   bool needsDraw = false;
   T* dragTile;
+  math::float3 lastNormalVec;
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;

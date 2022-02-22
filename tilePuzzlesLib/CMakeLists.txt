@@ -64,7 +64,6 @@ set_target_properties(glog PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/tile
 target_link_libraries(tilePuzzlesLib pthread c++ dl SDL2 glog)
 target_include_directories(tilePuzzlesLib PUBLIC "${CMAKE_SOURCE_DIR}/tilePuzzlesLib/include")
 
-
 ##########################################################
 # TESTS
 add_executable(tests ${TESTS})
@@ -89,3 +88,4 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/tilePuzzlesLib/textures/**
                 ${CMAKE_BINARY_DIR}/textures)
+

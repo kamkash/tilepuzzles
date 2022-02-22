@@ -1,7 +1,7 @@
 #ifndef _IRENDERER_H_
 #define _IRENDERER_H_
 namespace tilepuzzles {
-  
+
 struct IRenderer {
   IRenderer() {
   }
@@ -10,6 +10,7 @@ struct IRenderer {
   }
 
   virtual Tile* onMouseDown(const float2& viewCoord) = 0;
+  virtual Tile* onRightMouseDown(const float2& viewCoord) = 0;
   virtual Tile* onMouseUp(const float2& viewCoord) = 0;
   virtual void onMouseMove(const float2& dragPosition) = 0;
   virtual void initMesh() = 0;
