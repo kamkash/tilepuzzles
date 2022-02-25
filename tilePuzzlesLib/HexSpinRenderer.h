@@ -107,7 +107,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   virtual Path getAnchorTexturePath() {
-    Path path = FilamentApp::getRootAssetsPath() + "textures/gear.png";
+    Path path = FilamentApp::getRootAssetsPath() + "textures/gear1.png";
     return path;
   }
 
@@ -168,7 +168,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
     anchMatInstance = anchMaterial->createInstance();
     anchMatInstance->setParameter("albedo", anchTex, sampler);
-    anchMatInstance->setParameter("roughness", 1.f);
+    anchMatInstance->setParameter("roughness", 0.f);
     anchMatInstance->setParameter("metallic", 1.f);
     anchMatInstance->setParameter("alpha", 1.f);
 
