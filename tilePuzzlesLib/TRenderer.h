@@ -11,6 +11,7 @@
 #include <filament/Engine.h>
 #include <filament/IndexBuffer.h>
 #include <filament/IndirectLight.h>
+#include <filament/LightManager.h>
 #include <filament/Material.h>
 #include <filament/MaterialInstance.h>
 #include <filament/RenderableManager.h>
@@ -106,6 +107,8 @@ struct TRenderer : IRenderer {
     engine->destroy(material);
     engine->destroy(vb);
     engine->destroy(ib);
+    engine->destroy(light);
+
     view->setScene(nullptr);
     engine->destroy(tex);
     engine->destroy(scene);
@@ -137,6 +140,7 @@ struct TRenderer : IRenderer {
       auto& rcm = engine->getRenderableManager();
       rcm.destroy(renderable);
 
+
       RenderableManager::Builder(1)
         .boundingBox({{-1, -1, -1}, {1, 1, 1}})
         .material(0, matInstance)
@@ -152,7 +156,7 @@ struct TRenderer : IRenderer {
   virtual void drawBorder() {
     if (mesh->hasBorder()) {
       std::shared_ptr<VB> vbBorder = mesh->vertexBufferBorder;
-      Path path = FilamentApp::getRootAssetsPath() + "textures/border2.png";
+      Path path = getBorderTexturePath();
       if (!path.exists()) {
         L.error("The texture ", path, " does not exist");
         return;
@@ -191,9 +195,8 @@ struct TRenderer : IRenderer {
                    .indexCount(vbBorder->numIndices)
                    .bufferType(IndexBuffer::IndexType::USHORT)
                    .build(*engine);
-      borderIb->setBuffer(*engine, IndexBuffer::BufferDescriptor(vbBorder->indexShapes,
-
-                                                                 vbBorder->getIndexSize(), nullptr));
+      borderIb->setBuffer(
+        *engine, IndexBuffer::BufferDescriptor(vbBorder->indexShapes, vbBorder->getIndexSize(), nullptr));
 
       borderMatInstance = material->createInstance();
       borderMatInstance->setParameter("albedo", borderTex, sampler);
@@ -215,14 +218,18 @@ struct TRenderer : IRenderer {
     drawBorder();
   }
 
-  virtual Path loadTilesTexture() {
-    L.info("Using root asset path ", FilamentApp::getRootAssetsPath());
+  virtual Path getTilesTexturePath() {
     Path path = FilamentApp::getRootAssetsPath() + "textures/1-30c.png";
     return path;
   }
 
+  virtual Path getBorderTexturePath() {
+    Path path = FilamentApp::getRootAssetsPath() + "textures/border2.png";
+    return path;
+  }
+
   void drawTiles() {
-    Path path = loadTilesTexture();
+    Path path = getTilesTexturePath();
     if (!path.exists()) {
       L.error("The texture ", path, " does not exist");
       return;
@@ -252,9 +259,8 @@ struct TRenderer : IRenderer {
     // Set up view
     skybox = Skybox::Builder().color({0., 0., 0., 0.0}).build(*engine);
     scene->setSkybox(skybox);
-
-    view->setPostProcessingEnabled(false);
     view->setCamera(camera);
+    view->setPostProcessingEnabled(false);
 
     // Create quad renderable
     vb = VertexBuffer::Builder()
@@ -273,25 +279,40 @@ struct TRenderer : IRenderer {
     ib->setBuffer(*engine, IndexBuffer::BufferDescriptor(mesh->vertexBuffer->indexShapes,
                                                          mesh->vertexBuffer->getIndexSize(), nullptr));
 
-    Path matPath = FilamentApp::getRootAssetsPath() + "textures/bakedTexture.filamat";
+    Path matPath = FilamentApp::getRootAssetsPath() + "textures/bakedTextureOpaque.filamat";
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath);
     material = Material::Builder().package(mat.data(), mat.size()).build(*engine);
 
     matInstance = material->createInstance();
     matInstance->setParameter("albedo", tex, sampler);
+
+    // matInstance->setParameter("roughness", 1.f);
+    // matInstance->setParameter("metallic",1.f);
+    // matInstance->setParameter("alpha", 1.f);
+
     renderable = EntityManager::get().create();
     RenderableManager::Builder(1)
-      .boundingBox({{-1, -1, -1}, {1, 1, 1}})
+      .boundingBox({{-0, -0, -0}, {1, 1, 1}})
       .material(0, matInstance)
       .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0, mesh->vertexBuffer->numIndices)
       .culling(false)
-      .receiveShadows(false)
-      .castShadows(false)
       .build(*engine, renderable);
+
     scene->addEntity(renderable);
     const float aspect = getAspectRatio();
     camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
                           kFarPlane);
+
+    // Add light sources into the scene.
+    utils::EntityManager& em = utils::EntityManager::get();
+    light = em.create();
+    LightManager::Builder(LightManager::Type::SUN)
+      .color({1.,1.,1.})
+      .intensity(200000)
+      .direction({0., .1, 0.})
+      .sunAngularRadius(.55f)
+      .build(*engine, light);
+    scene->addEntity(light);
   }
 
   virtual void animate(double now) {
@@ -323,16 +344,19 @@ struct TRenderer : IRenderer {
   Texture* tex;
   VertexBuffer* vb;
   IndexBuffer* ib;
+
   Skybox* skybox;
   Entity renderable;
   Engine* engine = nullptr;
   filament::Renderer* filaRenderer = nullptr;
   SwapChain* swapChain = nullptr;
   Entity cameraEntity;
+  Entity light;
   Camera* camera = nullptr;
   View* view = nullptr;
   Scene* scene = nullptr;
   Material* material = nullptr;
+  Material* anchMaterial = nullptr;
   MaterialInstance* matInstance = nullptr;
 
   VertexBuffer* borderVb;

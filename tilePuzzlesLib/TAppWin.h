@@ -282,6 +282,10 @@ struct TAppWin {
     }
   }
 
+#if defined(__APPLE__)
+  Engine::Backend kBackend = filament::Engine::Backend::METAL;
+#endif
+
   std::function<void(TAppWin&, double)> onNewFrame;
   SDL_Window* sdl_window = nullptr;
   bool needsDraw = true;

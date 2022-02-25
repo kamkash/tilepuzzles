@@ -10,6 +10,8 @@ material {
         uv0
     ],
     shadingModel : unlit,
+    culling : none,
+    blending : transparent
 }
 
 fragment {

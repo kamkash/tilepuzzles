@@ -18,6 +18,16 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
   HexSpinMesh() {
   }
 
+  virtual void init(const std::string& jsonStr) {
+    Mesh::init(jsonStr);
+
+    int anchCount = tileGroups.size();
+    if (anchCount) {
+      vertexBufferAnchors.reset(new TQuadVertexBuffer(anchCount));
+      initAnchors();
+    }
+  }
+
   virtual int getTileCount() {
     int rows = configMgr.config["dimension"]["rows"].get<int>();
     int columns = configMgr.config["dimension"]["columns"].get<int>();
@@ -61,7 +71,29 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
     collectAnchors();
   }
 
-
+  void initAnchors() {
+    int rows = configMgr.config["dimension"]["rows"].get<int>();
+    int columns = configMgr.config["dimension"]["columns"].get<int>();
+    const float a = 2. / columns / 2. / 4.;
+    Size anchSize = {a, a};
+    int anchIndex = 0;
+    int indexOffset = 0;
+    const float texWidth = 1.;
+    std::for_each(tileGroups.begin(), tileGroups.end(),
+                  [texWidth, &indexOffset, &anchIndex, anchSize, this](const auto& tileGroup) {
+                    Point topLeft = {-1., 1.};
+                    math::float2 anchPoint = std::get<0>(tileGroup);
+                    topLeft.y = anchPoint.y + anchSize.y / 2.;
+                    topLeft.x = anchPoint.x - anchSize.x / 2.;
+                    const std::string tileId = string("anch") + to_string(anchIndex);
+                    Tile tile(tileId, topLeft, anchSize, &vertexBufferAnchors->get(anchIndex),
+                              &vertexBufferAnchors->getIndex(anchIndex), 0, texWidth, indexOffset,
+                              {anchIndex, 0}, anchIndex + 1);
+                    anchorTiles.push_back(tile);
+                    ++anchIndex;
+                    indexOffset += 4;
+                  });
+  }
 
   virtual void rotateTileGroup(const std::tuple<math::float2, std::vector<HexTile>>& tileGroup, float angle) {
     std::vector<HexTile> grp = std::get<1>(tileGroup);

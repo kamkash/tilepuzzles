@@ -192,10 +192,10 @@ struct Mesh {
   std::tuple<math::float2, std::vector<T>> nearestAnchorGroup(const math::float2& point) {
     auto init = std::tuple<math::float2, std::vector<T>>({100., 100.}, std::vector<T>());
     auto res = std::reduce(tileGroups.begin(), tileGroups.end(), init, [&point, this](auto a, auto b) {
-      math::float2 af = std::get<0>(a);
-      math::float2 bf = std::get<0>(b);
-      float adist = geo.tdist({point.x, point.y, 0.}, {af.x, af.y, 0.});
-      float bdist = geo.tdist({point.x, point.y, 0.}, {bf.x, bf.y, 0.});
+      math::float2 pointa = std::get<0>(a);
+      math::float2 pointb = std::get<0>(b);
+      float adist = geo.tdist({point.x, point.y, 0.}, {pointa.x, pointa.y, 0.});
+      float bdist = geo.tdist({point.x, point.y, 0.}, {pointb.x, pointb.y, 0.});
       return adist < bdist ? a : b;
     });
     return res;
@@ -216,8 +216,8 @@ struct Mesh {
     Size size = tiles[0].size;
     int rows = 2 / size.y;
     int columns = 2 / size.x;
-    rows *= 2;
-    columns *= 3;
+    rows *= 2;    // two rows per group
+    columns *= 3; // three columns per group
     math::float2 point;
     for (int r = 0; r < rows; ++r) {
       for (int c = 0; c < columns; ++c) {
@@ -232,8 +232,13 @@ struct Mesh {
   ConfigMgr configMgr;
   std::shared_ptr<VB> vertexBuffer;
   std::shared_ptr<VB> vertexBufferBorder;
+
   std::vector<T> tiles;
   std::vector<T> borderTiles;
+
+  std::shared_ptr<TQuadVertexBuffer> vertexBufferAnchors;
+  std::vector<Tile> anchorTiles;
+
   std::vector<std::tuple<math::float2, std::vector<T>>> tileGroups;
   Logger L;
 };
