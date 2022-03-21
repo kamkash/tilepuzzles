@@ -2,7 +2,11 @@
 #define _TAPP_H_
 
 #include "ConfigMgr.h"
+
+#ifdef USE_SDL
 #include "GLogger.h"
+#endif
+
 #include "Renderer.h"
 #include "SliderRenderer.h"
 
@@ -22,7 +26,6 @@
 #include <filamentapp/Config.h>
 #include <filamentapp/FilamentApp.h>
 #include <iostream> // for cerr
-#include <stb_image.h>
 #include <utils/EntityManager.h>
 #include <utils/Path.h>
 
@@ -52,7 +55,7 @@ struct TApp {
     config.title = "Tile Puzzles";
     // config.backend = Engine::Backend::VULKAN;
 
-    auto setup = [&](Engine* engine, View* view, Scene* scene) {
+        auto setup = [&](Engine *engine, View *view, Scene *scene) {
       L.info("Using root asset path ", FilamentApp::getRootAssetsPath());
       Path path = FilamentApp::getRootAssetsPath() + "textures/1-30c.png";
       if (!path.exists()) {
@@ -60,7 +63,7 @@ struct TApp {
         return -1;
       }
       int w, h, n;
-      unsigned char* data = stbi_load(path.c_str(), &w, &h, &n, 4);
+            unsigned char *data = stbi_load(path.c_str(), &w, &h, &n, 4);
       if (data == nullptr) {
         L.error("The texture ", path, " could not be loaded");
         return -1;
@@ -68,7 +71,7 @@ struct TApp {
       L.info("Loaded texture: y", w, "x", h);
       Texture::PixelBufferDescriptor buffer(
         data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::UBYTE,
-        (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
+                    (Texture::PixelBufferDescriptor::Callback) & stbi_image_free);
 
       static_assert(sizeof(Vertex) == (4 * 3) + (4 * 3) + (4 * 2),
                     "Strange vertex size.");
@@ -96,9 +99,11 @@ struct TApp {
         VertexBuffer::Builder()
           .vertexCount(mesh->vertexBuffer->numVertices)
           .bufferCount(1)
-          .attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT2, 0,
+                            .attribute(VertexAttribute::POSITION, 0,
+                                       VertexBuffer::AttributeType::FLOAT2, 0,
                      32)
-          .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT2, 24, 32)
+                            .attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT2,
+                                       24, 32)
           .build(*engine);
       vb->setBufferAt(*engine, 0,
                       VertexBuffer::BufferDescriptor(mesh->vertexBuffer->quadVertices,
@@ -117,9 +122,11 @@ struct TApp {
       matInstance->setParameter("albedo", tex, sampler);
       renderable = EntityManager::get().create();
       RenderableManager::Builder(1)
-        .boundingBox({{-1, -1, -1}, {1, 1, 1}})
+                    .boundingBox({{-1, -1, -1},
+                                  {1,  1,  1}})
         .material(0, matInstance)
-        .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0, mesh->vertexBuffer->numIndices)
+                    .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0,
+                              mesh->vertexBuffer->numIndices)
         .culling(false)
         .receiveShadows(false)
         .castShadows(false)
@@ -128,7 +135,7 @@ struct TApp {
       return 0;
     };
 
-    auto cleanup = [&](Engine* engine, View*, Scene*) {
+        auto cleanup = [&](Engine *engine, View *, Scene *) {
       engine->destroy(skybox);
       engine->destroy(renderable);
       engine->destroy(matInstance);
@@ -141,31 +148,33 @@ struct TApp {
       utils::EntityManager::get().destroy(camera);
     };
 
-    FilamentApp::get().animate([&](Engine* engine, View* view, double now) {
+        FilamentApp::get().animate([&](Engine *engine, View *view, double now) {
       const float zoom = 1.5f;
       const uint32_t w = view->getViewport().width;
       const uint32_t h = view->getViewport().height;
-      const float aspect = (float)w / h;
+            const float aspect = (float) w / h;
       cam->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom,
                          zoom, -1, 1);
     });
     FilamentApp::get().run(config, setup, cleanup);
   }
 
-  VertexBuffer* vb;
-  IndexBuffer* ib;
-  Material* mat;
-  MaterialInstance* matInstance;
-  Camera* cam;
+    VertexBuffer *vb;
+    IndexBuffer *ib;
+    Material *mat;
+    MaterialInstance *matInstance;
+    Camera *cam;
   Entity camera;
-  Skybox* skybox;
-  Texture* tex;
+    Skybox *skybox;
+    Texture *tex;
   Entity renderable;
 
-  std::shared_ptr<Renderer> renderer;
-  std::shared_ptr<Mesh> mesh;
+    std::shared_ptr <Renderer> renderer;
+    std::shared_ptr <Mesh> mesh;
 
+#ifdef USE_SDL
   constexpr static Logger L = Logger::getLogger();
+#endif
 };
 
 } // namespace tilepuzzles

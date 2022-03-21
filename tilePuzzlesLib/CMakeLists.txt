@@ -49,6 +49,8 @@ filagui
 imgui 
 )
 
+add_definitions(-DUSE_SDL)
+
 add_library(tilePuzzlesLib ${SRC})
 target_compile_options(tilePuzzlesLib PUBLIC -fno-builtin)
 

@@ -1,7 +1,10 @@
 #ifndef _SLIDER_MESH_H_
 #define _SLIDER_MESH_H_
 
+#ifdef USE_SDL
 #include "GLogger.h"
+#endif
+
 #include "Mesh.h"
 #include "Tile.h"
 
@@ -38,14 +41,14 @@ struct SliderMesh : Mesh<TQuadVertexBuffer, Tile> {
     vertexBuffer.reset(new SliderVertexBuffer(tileCount));
   }
 
-  virtual void init(const std::string& jsonStr) {
+    virtual void init(const std::string &jsonStr) {
     Mesh::init(jsonStr);
     tiles.back().isBlank = true;
   }
 
-  virtual Tile* const blankTile() {
+    virtual Tile *const blankTile() {
     auto tileIter =
-      std::find_if(tiles.begin(), tiles.end(), [](const Tile& t) { return t.isBlank; });
+            std::find_if(tiles.begin(), tiles.end(), [](const Tile &t) { return t.isBlank; });
     if (tileIter != tiles.end()) {
       int index = std::distance(tiles.begin(), tileIter);
       return &tiles[index];
@@ -54,16 +57,16 @@ struct SliderMesh : Mesh<TQuadVertexBuffer, Tile> {
     }
   }
 
-  virtual void slideTiles(const Tile& tile) {
+    virtual void slideTiles(const Tile &tile) {
     auto tiles = tilesToSlide(tile);
-    Tile* blank = blankTile();
-    std::for_each(tiles.begin(), tiles.end(), [blank](Tile* t) { t->swap(*blank); });
+        Tile *blank = blankTile();
+        std::for_each(tiles.begin(), tiles.end(), [blank](Tile *t) { t->swap(*blank); });
   }
 
-  std::vector<Tile*> tilesToSlide(const Tile& tile) {
+    std::vector<Tile *> tilesToSlide(const Tile &tile) {
     Direction dir = canSlide(tile);
-    Tile* blank = blankTile();
-    auto sliderTiles = std::vector<Tile*>();
+        Tile *blank = blankTile();
+        auto sliderTiles = std::vector<Tile *>();
     switch (dir) {
       case Direction::left: {
         int row = blank->gridCoord.x;
@@ -106,9 +109,9 @@ struct SliderMesh : Mesh<TQuadVertexBuffer, Tile> {
     }
   }
 
-  virtual Direction canSlide(const Tile& tile) {
+    virtual Direction canSlide(const Tile &tile) {
     Direction res = Direction::none;
-    Tile* blank = blankTile();
+        Tile *blank = blankTile();
     if (blank) {
       res =
         blank->gridCoord.x == tile.gridCoord.x
@@ -120,7 +123,9 @@ struct SliderMesh : Mesh<TQuadVertexBuffer, Tile> {
     return res;
   }
 
+#ifdef USE_SDL
   constexpr static Logger L = Logger::getLogger();
+#endif
 };
 } // namespace tilepuzzles
 #endif

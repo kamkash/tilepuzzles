@@ -2,7 +2,11 @@
 #define _ROLLER_RENDERER_H_
 
 #include "App.h"
+
+#ifdef USE_SDL
 #include "GLogger.h"
+#endif
+
 #include "RollerMesh.h"
 #include "TRenderer.h"
 #include "Tile.h"
@@ -22,9 +26,9 @@ struct RollerRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     mesh = std::shared_ptr<Mesh<TQuadVertexBuffer, Tile>>(new RollerMesh());
   }
 
-  virtual void onMouseMove(const float2& dragPosition) {
+    virtual void onMouseMove(const float2 &dragPosition) {
     math::float3 clipCoord = normalizeViewCoord(dragPosition);
-    Tile* newTile = mesh->hitTest(clipCoord);
+        Tile *newTile = mesh->hitTest(clipCoord);
     if (newTile && !newTile->equals(dragTile)) {
       Direction dir = dragTile->directionTo(newTile);
       if (dir != Direction::none) {
@@ -34,22 +38,22 @@ struct RollerRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     }
   }
 
-  virtual Tile* onMouseDown(const math::float2& pos) {
+    virtual Tile *onMouseDown(const math::float2 &pos) {
     math::float3 clipCoord = normalizeViewCoord(pos);
     dragTile = mesh->hitTest(clipCoord);
     return dragTile;
   }
 
-  virtual Tile* onRightMouseDown(const float2& viewCoord) {
+    virtual Tile *onRightMouseDown(const float2 &viewCoord) {
     math::float3 clipCoord = normalizeViewCoord(viewCoord);
-    Tile* tile = mesh->hitTest(clipCoord);
+        Tile *tile = mesh->hitTest(clipCoord);
     return tile;
   }
 
-  virtual Tile* onMouseUp(const math::float2& pos) {
+    virtual Tile *onMouseUp(const math::float2 &pos) {
     dragTile = nullptr;
     math::float3 clipCoord = normalizeViewCoord(pos);
-    Tile* tile = mesh->hitTest(clipCoord);
+        Tile *tile = mesh->hitTest(clipCoord);
     return tile;
   }
 
@@ -57,7 +61,7 @@ struct RollerRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     mesh->init(CFG);
   }
 
-  static constexpr const char* CFG = R"({
+    static constexpr const char *CFG = R"({
     "type":"roller",
     "dimension": {
       "count": 25
