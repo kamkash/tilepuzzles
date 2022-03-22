@@ -62,13 +62,13 @@ struct HexTile : Tile {
             -1. * math::float3({topLeft[0] + size[0] * .5, topLeft[1] - size[1], 0.});
     const math::float3 yoffset = {0., size[1], 0.};
 
-    math::float3 invTri[] = {geo.rotate(tri[0], math::F_PI, {0., 0., 1.}, offset),
-                             geo.rotate(tri[1], math::F_PI, {0., 0., 1.}, offset),
-                             geo.rotate(tri[2], math::F_PI, {0., 0., 1.}, offset)};
+    math::float3 invTri[] = {GeoUtil::rotate(tri[0], math::F_PI, {0., 0., 1.}, offset),
+                             GeoUtil::rotate(tri[1], math::F_PI, {0., 0., 1.}, offset),
+                             GeoUtil::rotate(tri[2], math::F_PI, {0., 0., 1.}, offset)};
 
-    invTri[0] = geo.translate(invTri[0], yoffset);
-    invTri[1] = geo.translate(invTri[1], yoffset);
-    invTri[2] = geo.translate(invTri[2], yoffset);
+    invTri[0] = GeoUtil::translate(invTri[0], yoffset);
+    invTri[1] = GeoUtil::translate(invTri[1], yoffset);
+    invTri[2] = GeoUtil::translate(invTri[2], yoffset);
 
     if (gridCoord.x % 2) {
       if (gridCoord.y % 3 == 0) {
@@ -171,9 +171,9 @@ struct HexTile : Tile {
   virtual void rotateAtAnchor(math::float2 anch, float angle) {
     const math::float3 offset = -1. * math::float3({anch.x, anch.y, 0.});
         math::float3 rotTri[] = {
-            geo.rotate((*triangleVertices)[0].position, angle, {0., 0., 1.}, offset),
-                             geo.rotate((*triangleVertices)[1].position, angle, {0., 0., 1.}, offset),
-                             geo.rotate((*triangleVertices)[2].position, angle, {0., 0., 1.}, offset)};
+            GeoUtil::rotate((*triangleVertices)[0].position, angle, {0., 0., 1.}, offset),
+                             GeoUtil::rotate((*triangleVertices)[1].position, angle, {0., 0., 1.}, offset),
+                             GeoUtil::rotate((*triangleVertices)[2].position, angle, {0., 0., 1.}, offset)};
     (*triangleVertices)[0].position = rotTri[0];
     (*triangleVertices)[1].position = rotTri[1];
     (*triangleVertices)[2].position = rotTri[2];
@@ -201,7 +201,6 @@ struct HexTile : Tile {
     L = Logger::getLogger();
 #endif
   constexpr static float EPS = 0.001F;
-  GeoUtil::GeoUtil geo;
   std::string groupKey;
 }; // namespace tilepuzzles
 

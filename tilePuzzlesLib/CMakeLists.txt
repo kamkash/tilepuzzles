@@ -14,6 +14,7 @@ test/test_config.cpp
 test/test_entities.cpp
 test/test_logger.cpp
 test/test_geometry.cpp
+test/test_utils.cpp
 )
 
 set(LIB_PATH ${CMAKE_SOURCE_DIR}/lib/x86_64)

@@ -2,7 +2,6 @@
 #define _TAPPWIN_H_
 
 #ifdef USE_SDL
-#include <SDL.h>
 #include "GLogger.h"
 #include <SDL.h>
 #endif
@@ -86,7 +85,7 @@ struct TAppWin {
   void init() {
 #ifdef USE_SDL
     ASSERT_POSTCONDITION(SDL_Init(SDL_INIT_EVENTS) == 0, "SDL_Init Failure");
-    GameUtil::init();
+    GameUtil::GameUtil::init();
     createRenderer();
     renderer->init();
     createWinow();
@@ -95,7 +94,7 @@ struct TAppWin {
     game_loop(0.);
     cleanup();
 #else
-    GameUtil::init();
+    GameUtil::GameUtil::init();
     createRenderer();
     renderer->init();
     setup_animating_scene();
@@ -136,7 +135,7 @@ struct TAppWin {
 
   void createRenderer() {
     //        renderer = std::shared_ptr<IRenderer>(new SliderRenderer());
-    //         renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
+    // renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
     renderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
   }
 
@@ -174,7 +173,7 @@ struct TAppWin {
 #endif
 #endif
 #ifdef USE_SDL
-    swapChain = renderer->createSwapChain(nativeSwapChain);    
+    swapChain = renderer->createSwapChain(nativeSwapChain);
     int width, height;
     SDL_GetWindowSize(sdl_window, &width, &height);
     resize_window(width, height);
