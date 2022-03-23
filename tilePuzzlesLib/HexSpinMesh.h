@@ -117,6 +117,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
                               &vertexBufferAnchors->getIndex(anchIndex), 0, texWidth, indexOffset,
                               {anchIndex, 0}, anchIndex + 1);
                     anchorTiles.push_back(tile);
+                    tile.setVertexZCoord(.1);
                     ++anchIndex;
                     indexOffset += 4;
                   });
@@ -128,17 +129,23 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
     std::for_each(grp.begin(), grp.end(), [angle, &pt](HexTile& t) { t.rotateAtAnchor(pt, angle); });
   }
 
+  virtual void setTileGroupZCoord(const std::tuple<math::float2, std::vector<HexTile>>& tileGroup,
+                                  float zCoord) {
+    std::vector<HexTile> grp = std::get<1>(tileGroup);
+    std::for_each(grp.begin(), grp.end(), [&zCoord](HexTile& t) { t.setVertexZCoord(zCoord); });
+  }
+
   virtual void shuffle() {
+    int anchCount = tileGroupAnchors.size();
     for (int i = 0; i < HexSpinMesh::SHUFFLE_PASSES; ++i) {
-      int anchCount = tileGroupAnchors.size();
-      float angle = GameUtil::GameUtil::coinFlip() ? GeoUtil::GeoUtil::PI_3 : -GeoUtil::GeoUtil::PI_3;
-      int anchIndex = GameUtil::GameUtil::trand(0, anchCount);
+      float angle = GameUtil::coinFlip() ? GeoUtil::PI_3 : -GeoUtil::PI_3;
+      int anchIndex = GameUtil::trand(0, anchCount);
       auto anchor = tileGroupAnchors[anchIndex];
       rotateTileGroup(anchor, angle);
       collectAnchors();
     }
   }
-  static constexpr int SHUFFLE_PASSES = 200;
+  static constexpr int SHUFFLE_PASSES = 400;
 };
 
 } // namespace tilepuzzles

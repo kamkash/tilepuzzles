@@ -87,6 +87,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       math::float3 posVec = GeoUtil::translate(clipCoord, -1. * math::float3(anchorPoint.x, anchorPoint.y, 0.));
       math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
       lastNormalVec = pNormal;
+      mesh->setTileGroupZCoord(dragAnchor, .1);
     }
     return dragTile;
   }
@@ -96,6 +97,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     if (angle != 0.) {
       mesh->rotateTileGroup(dragAnchor, angle);
       snapToPosition();
+      mesh->setTileGroupZCoord(dragAnchor, 0.);
       needsDraw = true;
     }
     rotationAngle = 0.f;
@@ -250,7 +252,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   std::tuple<math::float2, std::vector<HexTile>> dragAnchor;
   float rotationAngle = 0.;
-  static constexpr float ROTATION_ANGLE = math::F_PI / 20.;
+  static constexpr float ROTATION_ANGLE = math::F_PI / 60.;
   static constexpr float PI_3 = math::F_PI / 3.;
   constexpr static float EPS = 0.1F;
   static constexpr const char* CFG = R"({

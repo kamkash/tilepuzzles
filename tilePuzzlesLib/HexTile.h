@@ -113,6 +113,12 @@ struct HexTile : Tile {
     (*triangleVertices)[2].texCoords = {texWidth * (texIndex + .9), .4};
   }
 
+  virtual void setVertexZCoord(float zCoord) {
+      (*triangleVertices)[0].position.z = zCoord;
+      (*triangleVertices)[1].position.z = zCoord;
+      (*triangleVertices)[2].position.z = zCoord;
+    }
+
   /* A utility function to calculate area of triangle formed by (x1, y1),
   (x2, y2) and (x3, y3) */
     float area(const math::float3 &v1, const math::float3 &v2, const math::float3 &v3) const {
