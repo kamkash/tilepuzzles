@@ -40,7 +40,7 @@ CATCH_TEST_CASE("EntityCreation", "[entity_creation]") {
   CATCH_SECTION("tile dimensions initialization") {
     tilepuzzles::Tile tile2("tile1", tilepuzzles::Point(0., 0.),
                             tilepuzzles::Size(.5, .5), &QUAD_VERTICES, &QUAD_INDICES, 0,
-                            texWidth, 0, {0, 0}, 1);
+                            texWidth, 0, {0, 0}, 1, 0);
     CATCH_REQUIRE(tile2.tileId == "tile1");
     CATCH_REQUIRE(tile2.topLeft == tilepuzzles::Point(0., 0.));
     CATCH_REQUIRE(tile2.size == tilepuzzles::Size(0.5, 0.5));
@@ -51,10 +51,10 @@ CATCH_TEST_CASE("EntityCreation", "[entity_creation]") {
 
     tilepuzzles::Tile tile1("tile1", tilepuzzles::Point(0., 0.),
                             tilepuzzles::Size(.5, .5), &vb.get(0), &vb.getIndex(0), 0,
-                            texWidth, 0, {0, 0}, 1);
+                            texWidth, 0, {0, 0}, 1, 0);
     tilepuzzles::Tile tile2("tile2", tilepuzzles::Point(0.1, 0.1),
                             tilepuzzles::Size(.1, .1), &vb.get(1), &vb.getIndex(1), 0,
-                            texWidth, 1, {0, 0}, 2);
+                            texWidth, 1, {0, 0}, 2, 0);
 
     CATCH_REQUIRE(vb.get(0)[0].position[0] == tile1.quadVertices[0]->position[0]);
 

@@ -105,7 +105,7 @@ namespace filament {
  *      0.001   | 7.2e-5 |  0.0043 |  0.4624  |  48.58
  *      0.01    | 6.9e-6 |  0.0001 |  0.0430  |   4.62
  *      0.1     | 3.6e-7 |  7.0e-5 |  0.0072  |   0.43
- *      1.0     |    0   |  3.8e-6 |  0.0007  |   0.07
+ *      1.0     |    0    |  3.8e-6 |  0.0007  |   0.07
  *
  *
  *  As can be seen in the table above, the depth-buffer precision drops rapidly with the

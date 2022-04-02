@@ -84,11 +84,8 @@ target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
 
 add_custom_command(
         TARGET tilePuzzlesLib
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/textures)
-
-add_custom_command(
-        TARGET tilePuzzlesLib
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_SOURCE_DIR}/tilePuzzlesLib/textures/**
-                ${CMAKE_BINARY_DIR}/textures)
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/textures
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/materials        
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tilePuzzlesLib/textures/** ${CMAKE_BINARY_DIR}/textures
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tile_material/** ${CMAKE_BINARY_DIR}/materials)                
 

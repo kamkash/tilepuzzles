@@ -124,18 +124,18 @@ struct Mesh {
     const int dim = sqrt(tileCount);
     const float texWidth = 32. / 1024.;
 
-    const Size size = {2. / dim, 2. / dim};
-    Point topLeft = {-1., 1.};
+    const Size size = {(HIGH_X - LOW_X) / dim * TILE_SCALE_FACTOR, (HIGH_Y - LOW_Y) / dim * TILE_SCALE_FACTOR};
+    Point topLeft = {LOW_X, HIGH_Y};
 
     int t = 0;
     int indexOffset = 0;
     for (int r = 0; r < dim; ++r) {
       for (int c = 0; c < dim; ++c) {
-        topLeft.y = 1. - r * size.y;
-        topLeft.x = -1. + c * size.x;
+        topLeft.y = HIGH_Y - r * size.y;
+        topLeft.x = LOW_X + c * size.x;
         const std::string tileId = string("tile") + to_string(r) + to_string(c);
         T tile(tileId, topLeft, size, &vertexBuffer->get(t), &vertexBuffer->getIndex(t), t, texWidth,
-               indexOffset, {r, c}, t + 1);
+               indexOffset, {r, c}, t + 1, 0.1F);
         tiles.push_back(tile);
         ++t;
         indexOffset += 4;
@@ -161,38 +161,38 @@ struct Mesh {
       const int tileCount = getTileCount();
       const int dim = sqrt(tileCount);
       const float texWidth = 30. / 60.;
-      const Size size = {2. / dim, 2. / dim};
+      const Size size = {(HIGH_X - LOW_X) / dim * TILE_SCALE_FACTOR, (HIGH_Y - LOW_Y) / dim * TILE_SCALE_FACTOR};
       const float borderThickness = size.x * .1f;
       const Size horzSize = {size.x * borderWidth + borderThickness, borderThickness};
       const Size vertSize = {borderThickness, size.y * borderHeight + borderThickness};
-      Point topLeft = {-1., 1.};
+      Point topLeft = {LOW_X, HIGH_Y};
 
       // top
-      topLeft.x = -1. + borderLeft * size.x;
-      topLeft.y = 1. - borderTop * size.y;
+      topLeft.x = LOW_X + borderLeft * size.x;
+      topLeft.y = HIGH_Y - borderTop * size.y;
       T topTile("borderTop", topLeft, horzSize, &vertexBufferBorder->get(0), &vertexBufferBorder->getIndex(0),
-                0, texWidth, 0, {0, 0}, 1);
+                0, texWidth, 0, {0, 0}, 1, .2);
       borderTiles.push_back(topTile);
 
       // bottom
-      topLeft.x = -1. + borderLeft * size.x;
-      topLeft.y = 1. - (borderTop * size.y) - (borderHeight * size.y);
+      topLeft.x = LOW_X + borderLeft * size.x;
+      topLeft.y = HIGH_Y - (borderTop * size.y) - (borderHeight * size.y);
       T bottomTile("borderBottom", topLeft, horzSize, &vertexBufferBorder->get(1),
-                   &vertexBufferBorder->getIndex(1), 0, texWidth, 4, {0, 0}, 2);
+                   &vertexBufferBorder->getIndex(1), 0, texWidth, 4, {0, 0}, 2, .2);
       borderTiles.push_back(bottomTile);
 
       // left
-      topLeft.x = -1. + borderLeft * size.x;
-      topLeft.y = 1. - borderTop * size.y;
+      topLeft.x = LOW_X + borderLeft * size.x;
+      topLeft.y = HIGH_Y - borderTop * size.y;
       T leftTile("borderLeft", topLeft, vertSize, &vertexBufferBorder->get(2),
-                 &vertexBufferBorder->getIndex(2), 1, texWidth, 8, {0, 0}, 3);
+                 &vertexBufferBorder->getIndex(2), 1, texWidth, 8, {0, 0}, 3, .2);
       borderTiles.push_back(leftTile);
 
       // right
-      topLeft.x = -1. + (borderLeft * size.x) + (borderWidth * size.x);
-      topLeft.y = 1. - borderTop * size.y;
+      topLeft.x = LOW_X + (borderLeft * size.x) + (borderWidth * size.x);
+      topLeft.y = HIGH_Y - borderTop * size.y;
       T rightTile("borderRight", topLeft, vertSize, &vertexBufferBorder->get(3),
-                  &vertexBufferBorder->getIndex(3), 1, texWidth, 12, {0, 0}, 4);
+                  &vertexBufferBorder->getIndex(3), 1, texWidth, 12, {0, 0}, 4, .2);
       borderTiles.push_back(rightTile);
     }
   }
@@ -223,15 +223,15 @@ struct Mesh {
   void collectAnchors() {
     tileGroupAnchors.clear();
     Size size = tiles[0].size;
-    int rows = 2 / size.y;
-    int columns = 2 / size.x;
+    int rows = (Mesh::HIGH_Y - Mesh::LOW_Y) / size.y;
+    int columns = (Mesh::HIGH_X - Mesh::LOW_X) / size.x;
     rows *= 2;    // two rows per group
     columns *= 3; // three columns per group
     math::float2 point;
     for (int r = 0; r < rows; ++r) {
       for (int c = 0; c < columns; ++c) {
-        point.x = -1. + c * size.x * .5;
-        point.y = 1. - r * size.y;
+        point.x = Mesh::LOW_X + c * size.x * .5;
+        point.y = Mesh::HIGH_Y - r * size.y;
         addAnchor(point);
       }
     }
@@ -249,6 +249,12 @@ struct Mesh {
 
   std::vector<std::tuple<math::float2, std::vector<T>>> tileGroupAnchors;
   std::unordered_map<std::string, std::vector<T>> tileGroups;
+
+  static constexpr float LOW_X = -1.F;
+  static constexpr float HIGH_X = 1.F;
+  static constexpr float LOW_Y = -1.F;
+  static constexpr float HIGH_Y = .7F;
+  static constexpr float TILE_SCALE_FACTOR = .8F;
 #ifdef USE_SDL
   Logger L;
 #endif
