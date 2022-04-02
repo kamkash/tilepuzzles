@@ -161,7 +161,6 @@ struct TRenderer : IRenderer {
     if (width && height) {
       aspectRation = float(width) / float(height);
     }
-    LOGI("---------- AspectRation %f", aspectRation);
     return aspectRation;
   }
 
@@ -368,15 +367,12 @@ struct TRenderer : IRenderer {
     ib->setBuffer(*engine, IndexBuffer::BufferDescriptor(mesh->vertexBuffer->indexShapes,
                                                          mesh->vertexBuffer->getIndexSize(), nullptr));
 
-    Path matPath = IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
+    Path matPath = IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath.c_str());
     material = Material::Builder().package(mat.data(), mat.size()).build(*engine);
     matInstance = material->createInstance();
     matInstance->setParameter("albedo", tex, sampler);
-
-    // matInstance->setParameter("roughness", 1.f);
-    // matInstance->setParameter("metallic", 1.f);
-    // matInstance->setParameter("alpha", 1.f);
+    matInstance->setParameter("alpha", 1.f);
 
     renderable = EntityManager::get().create();
     RenderableManager::Builder(1)
