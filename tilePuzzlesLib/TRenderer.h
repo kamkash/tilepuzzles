@@ -500,7 +500,7 @@ struct TRenderer : IRenderer {
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;
-  static constexpr float zoom = 1.0f;
+  float zoom = 1.0f;
 
   static constexpr std::string_view FILAMAT_FILE_UNLIT = "bakedTextureUnlitTransparent.filamat";
   static constexpr std::string_view FILAMAT_FILE_OPAQUE = "bakedTextureOpaque.filamat";
