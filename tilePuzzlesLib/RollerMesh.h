@@ -125,8 +125,6 @@ struct RollerMesh : Mesh<TQuadVertexBuffer, Tile> {
       high_y = std::max(high_y, (*iniQuad)[2].position.y);
       high_y = std::max(high_y, (*iniQuad)[3].position.y);
     });
-
-    L.info("low_x", low_x, "high_x", high_x, "low_y", low_y, "high_y", high_y);
   }
 
   float low_x;

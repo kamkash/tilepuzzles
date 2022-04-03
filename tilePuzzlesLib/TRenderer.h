@@ -291,8 +291,6 @@ struct TRenderer : IRenderer {
       borderMaterial = Material::Builder().package(mat.data(), mat.size()).build(*engine);
 
       borderMatInstance = borderMaterial->createInstance();
-      // borderMatInstance->setParameter("roughness", 1.f);
-      // borderMatInstance->setParameter("metallic", 1.f);
       borderMatInstance->setParameter("alpha", 1.f);
 
       borderMatInstance->setParameter("albedo", borderTex, sampler);

@@ -40,7 +40,7 @@ struct GameUtil {
   static constexpr float HIGH_X = 1.F;
   static constexpr float LOW_Y = -1.F;
   static constexpr float HIGH_Y = .7F;
-  static constexpr float TILE_SCALE_FACTOR = .8F;
+  static constexpr float TILE_SCALE_FACTOR = .6F;
 };
 
 } // namespace tilepuzzles
