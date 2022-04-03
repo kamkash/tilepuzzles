@@ -6,6 +6,7 @@
 #include <SDL.h>
 #endif
 
+#include "GameUtil.h"
 #include "Vertex.h"
 #include "enums.h"
 
@@ -62,53 +63,12 @@ struct Tile {
   virtual void rotateAtAnchor(math::float2 anch, float angle) {
   }
 
-  void translate(Direction dir, int maxCoord) {
-    switch (dir) {
-      case Direction::up:
-        topLeft[1] += size[1];
-        gridCoord.x -= 1;
-        if (topLeft[1] > 1.) {
-          topLeft[1] = -1. + size[1];
-          gridCoord.x = maxCoord;
-        }
-        break;
-      case Direction::down:
-        topLeft[1] -= size[1];
-        gridCoord.x += 1;
-        if (topLeft[1] <= -1.) {
-          topLeft[1] = 1.;
-          gridCoord.x = 0;
-        }
-        break;
-      case Direction::left:
-        topLeft[0] -= size[0];
-        gridCoord.y -= 1;
-        if (topLeft[0] < -1.) {
-          topLeft[0] = 1. - size[0];
-          gridCoord.y = maxCoord;
-        }
-        break;
-      case Direction::right:
-        topLeft[0] += size[0];
-        gridCoord.y += 1;
-        if (topLeft[0] >= 1.) {
-          topLeft[0] = -1.;
-          gridCoord.y = 0;
-        }
-        break;
-      default:
-        break;
-    }
-    updateVertices();
-  }
+
 
   virtual bool onClick(const math::float2& coord) const {
     return (*quadVertices)[0].position.x <= coord.x && (*quadVertices)[1].position.x >= coord.x &&
            (*quadVertices)[0].position.y <= coord.y && (*quadVertices)[2].position.y >= coord.y;
   }
-
-  // Tile(Tile&&) = default;
-  // Tile(const Tile&) = default;
 
   virtual void updateVertices() {
     // bottom left

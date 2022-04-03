@@ -1,10 +1,8 @@
 material {
     name : BakedTexture,
-    parameters : [
-        {
-            type : sampler2d,
-            name : albedo
-        }
+    parameters : [ 
+        { type : sampler2d, name : albedo },
+        { type: float, name: alpha }                
     ],
     requires : [
         uv0

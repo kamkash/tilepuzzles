@@ -50,10 +50,10 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
     const int columns = configMgr.config["dimension"]["columns"].get<int>();
     const float texWidth = 32. / 1024.;
     int indexOffset = 0;
-    const float a = ((Mesh::HIGH_X - Mesh::LOW_X) / columns / 2.) * TILE_SCALE_FACTOR;
+    const float a = ((GameUtil::HIGH_X - GameUtil::LOW_X) / columns / 2.) * GameUtil::TILE_SCALE_FACTOR;
     const float h = sqrt3o2 * a;
     const Size size = {a, h};
-    Point topLeft = {Mesh::LOW_X, Mesh::HIGH_Y};
+    Point topLeft = {GameUtil::LOW_X, GameUtil::HIGH_Y};
 
     int t = 0;
     for (int r = 0; r < rows * 2; ++r) {
@@ -62,8 +62,8 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
         int rowGroup = trunc(r / 2);
         std::string key = to_string(rowGroup) + to_string(colGroup);
 
-        topLeft.x = Mesh::LOW_X + c * a * .5;
-        topLeft.y = Mesh::HIGH_Y - r * h;
+        topLeft.x = GameUtil::LOW_X + c * a * .5;
+        topLeft.y = GameUtil::HIGH_Y - r * h;
         const std::string tileId = string("tile") + to_string(r) + to_string(c);
         HexTile tile(tileId, topLeft, size, &vertexBuffer->get(t), &vertexBuffer->getIndex(t),
                      (rowGroup * columns) + colGroup, texWidth, indexOffset, {r, c}, t + 1, 0.);
@@ -101,7 +101,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
   void initAnchors() {
     int rows = configMgr.config["dimension"]["rows"].get<int>();
     int columns = configMgr.config["dimension"]["columns"].get<int>();
-    const float a = (Mesh::HIGH_X - Mesh::LOW_X) / columns / 2. / 4.;
+    const float a = (GameUtil::HIGH_X - GameUtil::LOW_X) / columns / 2. / 4.;
     Size anchSize = {a, a};
     int anchIndex = 0;
     int indexOffset = 0;

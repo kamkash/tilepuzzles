@@ -117,6 +117,10 @@ struct TRenderer : IRenderer {
     }
   }
 
+  virtual Path getTileMaterialPath() {
+    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+  }
+
   virtual void destroy() {
     engine->destroy(bgRenderable);
     engine->destroy(bgMatInstance);
@@ -367,7 +371,7 @@ struct TRenderer : IRenderer {
     ib->setBuffer(*engine, IndexBuffer::BufferDescriptor(mesh->vertexBuffer->indexShapes,
                                                          mesh->vertexBuffer->getIndexSize(), nullptr));
 
-    Path matPath = IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+    Path matPath = getTileMaterialPath();
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath.c_str());
     material = Material::Builder().package(mat.data(), mat.size()).build(*engine);
     matInstance = material->createInstance();

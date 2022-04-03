@@ -7,6 +7,8 @@
 #include <math/vec2.h>
 #include <math/vec3.h>
 
+
+
 using namespace filament;
 namespace tilepuzzles {
 
@@ -53,6 +55,7 @@ struct GeoUtil {
     return distance(v1, v2);
   }
 
+  static constexpr float EPS = 0.01F;
   static constexpr float PI_3 = math::F_PI / 3.;
 };
 } // namespace tilepuzzles

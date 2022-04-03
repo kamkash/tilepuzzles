@@ -28,6 +28,10 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     mesh = std::shared_ptr<Mesh<TriangleVertexBuffer, HexTile>>(new HexSpinMesh());
   }
 
+  virtual Path getTileMaterialPath() {
+    return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
+  }
+
   virtual void initMesh() {
     mesh->init(CFG);
   }
@@ -249,7 +253,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   std::tuple<math::float2, std::vector<HexTile>> dragAnchor;
   float rotationAngle = 0.;
-  static constexpr float ROTATION_ANGLE = math::F_PI / 45.;
+  static constexpr float ROTATION_ANGLE = math::F_PI / 30.;
   static constexpr float PI_3 = math::F_PI / 3.;
   constexpr static float EPS = 0.1F;
   static constexpr const char* CFG = R"({
