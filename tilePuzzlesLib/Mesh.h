@@ -29,7 +29,9 @@ using namespace filament::math;
 namespace tilepuzzles {
 
 template <typename VB, typename T>
+
 struct Mesh {
+  using TileGroup = std::tuple<math::float2, std::vector<T>, bool, math::int2>;
 
   Mesh() {
   }
@@ -69,7 +71,9 @@ struct Mesh {
     return std::vector<T*>();
   }
 
-  virtual void rotateTileGroup(const std::tuple<math::float2, std::vector<T>>& tileGroup, float angle) {
+  virtual void
+  rotateTileGroup(const std::tuple<math::float2, std::vector<T>, bool, math::int2>& tileGroup,
+                  float angle) {
   }
 
   void logTiles() {
@@ -79,7 +83,7 @@ struct Mesh {
     });
   }
 
-  T* tileAt(int row, int column) {
+  virtual T* tileAt(int row, int column) {
     auto tileIter = std::find_if(tiles.begin(), tiles.end(), [row, column](const T& t) {
       return row == t.gridCoord.x && column == t.gridCoord.y;
     });
@@ -90,7 +94,7 @@ struct Mesh {
     }
   }
 
-  virtual void setTileGroupZCoord(const std::tuple<math::float2, std::vector<T>>& tileGroup, float zCoord) {
+  virtual void setTileGroupZCoord(const TileGroup& tileGroup, float zCoord) {
   }
 
   virtual T* hitTest(const math::float3& clipCoord) {
@@ -104,7 +108,7 @@ struct Mesh {
     }
   }
 
-  virtual std::tuple<math::float2, std::vector<T>>* hitTestAnchor(const math::float3& clipCoord) {
+  virtual TileGroup* hitTestAnchor(const math::float3& clipCoord) {
     auto iter =
       std::find_if(tileGroupAnchors.begin(), tileGroupAnchors.end(), [&clipCoord](const auto& anch) {
         math::float2 point = std::get<0>(anch);
@@ -177,8 +181,8 @@ struct Mesh {
       const Size size = {(GameUtil::HIGH_X - GameUtil::LOW_X) / dim * GameUtil::TILE_SCALE_FACTOR,
                          (GameUtil::HIGH_Y - GameUtil::LOW_Y) / dim * GameUtil::TILE_SCALE_FACTOR};
       const float borderThickness = size.x * .1f;
-      const Size horzSize = {size.x * borderWidth + borderThickness, borderThickness};
-      const Size vertSize = {borderThickness, size.y * borderHeight + borderThickness};
+      const Size horzSize = {size.x * borderWidth, borderThickness};
+      const Size vertSize = {borderThickness, size.y * borderHeight};
       Point topLeft = {GameUtil::LOW_X, GameUtil::HIGH_Y};
 
       // top
@@ -190,7 +194,7 @@ struct Mesh {
 
       // bottom
       topLeft.x = GameUtil::LOW_X + borderLeft * size.x;
-      topLeft.y = GameUtil::HIGH_Y - (borderTop * size.y) - (borderHeight * size.y);
+      topLeft.y = GameUtil::HIGH_Y - (borderTop * size.y) - (borderHeight * size.y) + borderThickness;
       T bottomTile("borderBottom", topLeft, horzSize, &vertexBufferBorder->get(1),
                    &vertexBufferBorder->getIndex(1), 0, texWidth, 4, {0, 0}, 2, GameUtil::BORDER_DEPTH);
       borderTiles.push_back(bottomTile);
@@ -203,7 +207,7 @@ struct Mesh {
       borderTiles.push_back(leftTile);
 
       // right
-      topLeft.x = GameUtil::LOW_X + (borderLeft * size.x) + (borderWidth * size.x);
+      topLeft.x = GameUtil::LOW_X + (borderLeft * size.x) + (borderWidth * size.x) - borderThickness;
       topLeft.y = GameUtil::HIGH_Y - borderTop * size.y;
       T rightTile("borderRight", topLeft, vertSize, &vertexBufferBorder->get(3),
                   &vertexBufferBorder->getIndex(3), 1, texWidth, 12, {0, 0}, 4, GameUtil::BORDER_DEPTH);
@@ -211,8 +215,8 @@ struct Mesh {
     }
   }
 
-  std::tuple<math::float2, std::vector<T>> nearestAnchorGroup(const math::float2& point) {
-    auto init = std::tuple<math::float2, std::vector<T>>({100., 100.}, std::vector<T>());
+  TileGroup nearestAnchorGroup(const math::float2& point) {
+    auto init = TileGroup({100., 100.}, std::vector<T>(), 0, {0, 0});
     auto res =
       std::reduce(tileGroupAnchors.begin(), tileGroupAnchors.end(), init, [&point, this](auto a, auto b) {
         math::float2 pointa = std::get<0>(a);
@@ -224,12 +228,18 @@ struct Mesh {
     return res;
   }
 
-  void addAnchor(const math::float2& point) {
+  void addAnchor(const math::float2& point, int row, int col) {
     std::vector<T> anchTiles;
     std::copy_if(tiles.begin(), tiles.end(), std::back_inserter(anchTiles),
                  [&point](T& t) { return t.hasVertex(point); });
     if (anchTiles.size() == 6) {
-      std::tuple<math::float2, std::vector<T>> t = {point, anchTiles};
+      bool canDrag = false;
+      if (row % 2) {
+        canDrag = col == 2 || col == 8;
+      } else {
+        canDrag = col == 5 || col == 11;
+      }
+      TileGroup t = {point, anchTiles, canDrag, {0, 0}};
       tileGroupAnchors.push_back(t);
     }
   }
@@ -246,7 +256,7 @@ struct Mesh {
       for (int c = 0; c < columns; ++c) {
         point.x = GameUtil::LOW_X + c * size.x * .5;
         point.y = GameUtil::HIGH_Y - r * size.y;
-        addAnchor(point);
+        addAnchor(point, r, c);
       }
     }
   }
@@ -260,8 +270,7 @@ struct Mesh {
 
   std::shared_ptr<TQuadVertexBuffer> vertexBufferAnchors;
   std::vector<Tile> anchorTiles;
-
-  std::vector<std::tuple<math::float2, std::vector<T>>> tileGroupAnchors;
+  std::vector<TileGroup> tileGroupAnchors;
   std::unordered_map<std::string, std::vector<T>> tileGroups;
 
 #ifdef USE_SDL

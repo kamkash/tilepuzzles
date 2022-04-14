@@ -123,7 +123,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
                   });
   }
 
-  virtual void rotateTileGroup(const std::tuple<math::float2, std::vector<HexTile>>& tileGroup, float angle) {
+  virtual void rotateTileGroup(const std::tuple<math::float2, std::vector<HexTile>, bool, math::int2>& tileGroup, float angle) {
     std::vector<HexTile> grp = std::get<1>(tileGroup);
     math::float2 pt = std::get<0>(tileGroup);
     std::for_each(grp.begin(), grp.end(), [angle, &pt](HexTile& t) { t.rotateAtAnchor(pt, angle); });
@@ -132,7 +132,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
   virtual void setTileGroupZCoord(const std::tuple<math::float2, std::vector<HexTile>>& tileGroup,
                                   float zCoord) {
     std::vector<HexTile> grp = std::get<1>(tileGroup);
-    std::for_each(grp.begin(), grp.end(), [&zCoord](HexTile& t) { t.setVertexZCoord(zCoord); });
+    std::for_each(grp.begin(), grp.end(), [zCoord](HexTile& t) { t.setVertexZCoord(zCoord); });
   }
 
   virtual void shuffle() {
@@ -145,6 +145,11 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
       collectAnchors();
     }
   }
+
+  virtual HexTile* tileAt(int row, int column) {
+    return Mesh::tileAt(row, column);
+  }
+
   static constexpr int SHUFFLE_PASSES = 400;
 };
 

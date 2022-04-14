@@ -76,14 +76,12 @@ struct TRenderer : IRenderer {
 
   virtual void resize(int width, int height) {
     if (width > 0 && height > 0) {
+      const float aspect = float(width) / float(height);
       view->setViewport({0, 0, uint32_t(width), uint32_t(height)});
-      const float aspect = getAspectRatio();
-
-      if (aspect < 1.) {
-        zoom /= aspect;
-      }
       camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
                             kFarPlane);
+      // camera->setProjection(kFieldOfViewDeg, aspect, kNearPlane, kFarPlane, Camera::Fov::VERTICAL);
+      // camera->lookAt({0.0f, 0.0f, kCameraDist}, kCameraCenter, kCameraUp);
     }
   }
 
@@ -347,8 +345,7 @@ struct TRenderer : IRenderer {
     TextureSampler sampler(MinFilter::LINEAR, MagFilter::LINEAR);
 
     // Set up view
-    skybox =
-      Skybox::Builder().showSun(true).color({165. / 255., 42. / 255., 42. / 255., 1.f}).build(*engine);
+    skybox = Skybox::Builder().showSun(true).color({0. / 255., 255. / 255., 0. / 255., 1.f}).build(*engine);
     scene->setSkybox(skybox);
     view->setCamera(camera);
     view->setPostProcessingEnabled(false);
@@ -387,9 +384,6 @@ struct TRenderer : IRenderer {
       .build(*engine, renderable);
 
     scene->addEntity(renderable);
-    const float aspect = getAspectRatio();
-    camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
-                          kFarPlane);
   }
 
   virtual void addLight() {
@@ -428,9 +422,17 @@ struct TRenderer : IRenderer {
   }
 
   virtual void animate(double now) {
-    auto& tcm = engine->getTransformManager();
-    tcm.setTransform(tcm.getInstance(renderable),
-                     filament::math::mat4f::rotation(now, filament::math::float3{0, 0, 1}));
+    // auto rot = filament::math::mat4f::rotation(math::F_PI / 36., filament::math::float4{1, 0, 0, 1});
+    // auto trans = filament::math::mat4f::translation(math::float3({0.5, 0., .5}));
+    // auto scale = filament::math::mat4f::scaling(math::float3({.5, .5, .5}));
+
+    // auto& tcm = engine->getTransformManager();
+    // auto inst = tcm.getInstance(renderable);
+    // tcm.setTransform(inst, scale);
+    // inst = tcm.getInstance(bgRenderable);
+    // tcm.setTransform(inst, scale);
+    // inst = tcm.getInstance(borderRenderable);
+    // tcm.setTransform(inst, scale);
   }
 
   virtual void shuffle() {
@@ -499,7 +501,11 @@ struct TRenderer : IRenderer {
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;
-  float zoom = 1.0f;
+  static constexpr math::float3 kCameraCenter = {0.0f, 0.0f, 0.0f};
+  static constexpr math::float3 kCameraUp = {0.0f, 1.0f, 0.0f};
+  static constexpr float kCameraDist = 1.0f;
+  static constexpr double kFieldOfViewDeg = 60.0;
+  float zoom = 1.f;
 
   static constexpr std::string_view FILAMAT_FILE_UNLIT = "bakedTextureUnlitTransparent.filamat";
   static constexpr std::string_view FILAMAT_FILE_OPAQUE = "bakedTextureOpaque.filamat";

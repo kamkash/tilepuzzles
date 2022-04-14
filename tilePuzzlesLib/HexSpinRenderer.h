@@ -86,8 +86,9 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
     auto anch = mesh->hitTestAnchor(clipCoord);
     if (anch) {
-      auto anchorPoint = std::get<0>(dragAnchor);
-//      L.info("anchor hit", anchorPoint.x, anchorPoint.y)      ;
+      auto anchorPoint = std::get<0>(*anch);
+      bool drag = std::get<2>(*anch);
+      L.info("anchor hit", anchorPoint.x, anchorPoint.y, "can drag", drag);
     }
 
     dragTile = mesh->hitTest(clipCoord);
@@ -95,7 +96,8 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       dragAnchor = mesh->nearestAnchorGroup({clipCoord.x, clipCoord.y});
       auto anchorPoint = std::get<0>(dragAnchor);
       math::float3 anchVec = {dragTile->size.x, 0., 0.};
-      math::float3 posVec = GeoUtil::translate(clipCoord, -1. * math::float3(anchorPoint.x, anchorPoint.y, 0.));
+      math::float3 posVec =
+        GeoUtil::translate(clipCoord, -1. * math::float3(anchorPoint.x, anchorPoint.y, 0.));
       math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
       lastNormalVec = pNormal;
       mesh->setTileGroupZCoord(dragAnchor, GameUtil::RAISED_TILE_DEPTH);
@@ -258,7 +260,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   MaterialInstance* anchMatInstance = nullptr;
   Texture* anchTex;
 
-  std::tuple<math::float2, std::vector<HexTile>> dragAnchor;
+  std::tuple<math::float2, std::vector<HexTile>, bool, math::int2> dragAnchor;
   float rotationAngle = 0.;
   static constexpr float ROTATION_ANGLE = math::F_PI / 35.;
   static constexpr float PI_3 = math::F_PI / 3.;
@@ -266,7 +268,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   static constexpr const char* CFG = R"({
     "type":"HexSpinner",
       "dimension": {
-        "rows": 3,
+        "rows": 2,
         "columns": 3
       }
   })";

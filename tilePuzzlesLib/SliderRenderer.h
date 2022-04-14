@@ -2,9 +2,11 @@
 #define _SLIDER_RENDERER_H_
 
 #include "App.h"
+
 #ifdef USE_SDL
 #include "GLogger.h"
 #endif
+
 #include "SliderMesh.h"
 #include "TRenderer.h"
 #include "Tile.h"
@@ -24,18 +26,18 @@ struct SliderRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     mesh = std::shared_ptr<Mesh<TQuadVertexBuffer, Tile>>(new SliderMesh());
   }
 
-  virtual void onMouseMove(const float2& dragPosition) {
+    virtual void onMouseMove(const float2 &dragPosition) {
   }
 
-  virtual Tile* onMouseUp(const float2& pos) {
+    virtual Tile *onMouseUp(const float2 &pos) {
     math::float3 clipCoord = normalizeViewCoord(pos);
-    Tile* tile = mesh->hitTest(clipCoord);
+        Tile *tile = mesh->hitTest(clipCoord);
     return tile;
   }
 
-  virtual Tile* onMouseDown(const float2& pos) {
+    virtual Tile *onMouseDown(const float2 &pos) {
     math::float3 clipCoord = normalizeViewCoord(pos);
-    Tile* tile = mesh->hitTest(clipCoord);
+        Tile *tile = mesh->hitTest(clipCoord);
     if (tile) {
       mesh->slideTiles(*tile);
       needsDraw = true;
@@ -43,9 +45,9 @@ struct SliderRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     return tile;
   }
 
-  virtual Tile* onRightMouseDown(const float2& viewCoord) {
+    virtual Tile *onRightMouseDown(const float2 &viewCoord) {
     math::float3 clipCoord = normalizeViewCoord(viewCoord);
-    Tile* tile = mesh->hitTest(clipCoord);
+        Tile *tile = mesh->hitTest(clipCoord);
     return tile;
   }
 
@@ -53,14 +55,14 @@ struct SliderRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     mesh->init(CFG);
   }
 
-  static constexpr const char* CFG = R"({
+    static constexpr const char *CFG = R"({
     "type":"slider",
       "dimension": {
         "count": 24
       }    ,
     "border": {
       "top":1,
-      "left":1,
+      "left":0,
       "width": 4,
       "height": 4
     }      

@@ -63,8 +63,6 @@ struct Tile {
   virtual void rotateAtAnchor(math::float2 anch, float angle) {
   }
 
-
-
   virtual bool onClick(const math::float2& coord) const {
     return (*quadVertices)[0].position.x <= coord.x && (*quadVertices)[1].position.x >= coord.x &&
            (*quadVertices)[0].position.y <= coord.y && (*quadVertices)[2].position.y >= coord.y;
@@ -92,10 +90,8 @@ struct Tile {
   }
 
   virtual void setVertexZCoord(float zCoord) {
-    (*quadVertices)[0].position.z = zCoord;
-    (*quadVertices)[1].position.z = zCoord;
-    (*quadVertices)[2].position.z = zCoord;
-    (*quadVertices)[3].position.z = zCoord;
+    (*quadVertices)[0].position.z = (*quadVertices)[1].position.z = (*quadVertices)[2].position.z =
+      (*quadVertices)[3].position.z = zCoord;
   }
 
   virtual void updateTexCoords(int texIndex, float texWidth) {
