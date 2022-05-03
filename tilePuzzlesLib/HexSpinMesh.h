@@ -254,11 +254,21 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
 
   virtual void rollTileGroups(const TileGroup<HexTile>& tileGroup, Direction dir) {
     std::vector<TileGroup<HexTile>*> rollerGroups = tileGroupsToRoll(tileGroup, dir);
-    std::vector<TileDto> grp0 = cloneTileGroup(*rollerGroups[0]);
-    for (int i = 0; i < rollerGroups.size() - 1; ++i) {
-      assignTileGroup(*rollerGroups[i + 1], *rollerGroups[i]);
+
+    std::vector<TileDto> grp0;
+    if (dir == Direction::down || dir == Direction::right) {
+      grp0 = cloneTileGroup(*rollerGroups[0]);
+      for (int i = 0; i < rollerGroups.size() - 1; ++i) {
+        assignTileGroup(*rollerGroups[i + 1], *rollerGroups[i]);
+      }
+      assignTileGroup(grp0, *rollerGroups[rollerGroups.size() - 1]);
+    } else {
+      grp0 = cloneTileGroup(*rollerGroups[rollerGroups.size() - 1]);
+      for (int i = rollerGroups.size() - 2; i >= 0; --i) {
+        assignTileGroup(*rollerGroups[i], *rollerGroups[i + 1]);
+      }
+      assignTileGroup(grp0, *rollerGroups[0]);
     }
-    assignTileGroup(grp0, *rollerGroups[rollerGroups.size() - 1]);
     processAnchorGroups();
   }
 

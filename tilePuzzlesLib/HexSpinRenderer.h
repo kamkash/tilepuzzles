@@ -17,6 +17,12 @@
 #include <iostream>
 #include <vector>
 
+#include <math/mat3.h>
+#include <math/mat4.h>
+#include <math/mathfwd.h>
+#include <math/vec2.h>
+#include <math/vec3.h>
+
 using namespace filament;
 using namespace filament::math;
 
@@ -45,40 +51,65 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     return tile;
   }
 
-  virtual void onMouseMove(const float2& dragPosition) {
-    if (dragTile) {
-      math::float3 clipCoord = normalizeViewCoord(dragPosition);
-      float2 anchor = dragAnchor.anchorPoint;
-      math::float3 anchVec = {dragTile->size.x, 0., 0.};
-      math::float3 posVec = GeoUtil::translate(clipCoord, -1. * math::float3(anchor.x, anchor.y, 0.));
-      math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
+  void handleTileDrag(math::float3 clipCoord) {
+    float2 anchor = dragAnchor.anchorPoint;
+    math::float3 anchVec = {dragTile->size.x, 0., 0.};
+    math::float3 posVec = GeoUtil::translate(clipCoord, -1. * math::float3(anchor.x, anchor.y, 0.));
+    math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
 
-      float angle = 0.F;
-      if (abs(pNormal.z) > HexTile::EPS && abs(pNormal.z - lastNormalVec.z) > HexTile::EPS) {
-        if (posVec.y > anchVec.y) {
-          if (pNormal.z > lastNormalVec.z) {
-            // normal increase in top-right-left quadrant
-            angle = posVec.x >= 0 ? -ROTATION_ANGLE : ROTATION_ANGLE;
-          } else {
-            // normal decrease in top-right-left quadrant
-            angle = posVec.x >= 0 ? ROTATION_ANGLE : -ROTATION_ANGLE;
-          }
+    float angle = 0.F;
+    if (abs(pNormal.z) > HexTile::EPS && abs(pNormal.z - lastNormalVec.z) > HexTile::EPS) {
+      if (posVec.y > anchVec.y) {
+        if (pNormal.z > lastNormalVec.z) {
+          // normal increase in top-right-left quadrant
+          angle = posVec.x >= 0 ? -ROTATION_ANGLE : ROTATION_ANGLE;
         } else {
-          if (pNormal.z > lastNormalVec.z) {
-            // normal increase in bottom-right-left quadrant
-            angle = posVec.x >= 0 ? -ROTATION_ANGLE : ROTATION_ANGLE;
-          } else {
-            // normal decrease in bottom-right-left quadrant
-            angle = posVec.x >= 0 ? ROTATION_ANGLE : -ROTATION_ANGLE;
-          }
+          // normal decrease in top-right-left quadrant
+          angle = posVec.x >= 0 ? ROTATION_ANGLE : -ROTATION_ANGLE;
+        }
+      } else {
+        if (pNormal.z > lastNormalVec.z) {
+          // normal increase in bottom-right-left quadrant
+          angle = posVec.x >= 0 ? -ROTATION_ANGLE : ROTATION_ANGLE;
+        } else {
+          // normal decrease in bottom-right-left quadrant
+          angle = posVec.x >= 0 ? ROTATION_ANGLE : -ROTATION_ANGLE;
         }
       }
-      if (angle != 0.F) {
-        rotationAngle += angle;
-        mesh->rotateTileGroup(dragAnchor, angle);
+    }
+    if (angle != 0.F) {
+      rotationAngle += angle;
+      mesh->rotateTileGroup(dragAnchor, angle);
+      needsDraw = true;
+    }
+    lastNormalVec = pNormal;
+  }
+
+  void handleAnchorDrag(math::float3 clipCoord) {
+    bool canDrag = dragAnchor.dragable;
+    if (canDrag) {
+      float dx = abs(clipCoord.x - dragPoint.x);
+      float dy = abs(clipCoord.y - dragPoint.y);
+      float dist = distance(clipCoord, math::float3(dragPoint.x, dragPoint.y, 0.F));
+      // L.info("dist, size.x", dist, dragTile->size.x);
+      if (dist > dragTile->size.x) {
+        Direction dir = dx > dy ? (clipCoord.x - dragPoint.x > 0) ? Direction::right : Direction::left
+                                : (clipCoord.y - dragPoint.y > 0) ? Direction::up : Direction::down;
+        mesh->rollTileGroups(dragAnchor, dir);
+        dragPoint = math::float2(clipCoord.x, clipCoord.y);
         needsDraw = true;
       }
-      lastNormalVec = pNormal;
+    }
+  }
+
+  virtual void onMouseMove(const float2& dragPosition) {
+    math::float3 clipCoord = normalizeViewCoord(dragPosition);
+    if (dragTile) {
+      if (dragAction == DragAction::TileDrag) {
+        handleTileDrag(clipCoord);
+      } else if (dragAction == DragAction::AnchorDrag) {
+        handleAnchorDrag(clipCoord);
+      }
     }
   }
 
@@ -87,24 +118,16 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     dragTile = mesh->hitTest(clipCoord);
     auto anch = mesh->hitTestAnchor(clipCoord);
     if (anch) {
+      dragAnchor = *anch;
       dragAction = DragAction::AnchorDrag;
-      auto anchorPoint = anch->anchorPoint;
-      bool anchDrag = anch->dragable;
-      math::int2 coord = anch->gridCoord;
-      L.info("anchor hit", anchorPoint.x, anchorPoint.y, "drag", anchDrag, "coord", coord.x, coord.y);
-      if (anchDrag) {
-        auto grp = anch->tileGroup;
-        for_each(grp.begin(), grp.end(), [](const auto& t) { t.logVertices(); });
-        mesh->rollTileGroups(*anch, Direction::up);
-        needsDraw = true;
-      }
+      dragPoint = dragAnchor.anchorPoint;
     } else if (dragTile) {
       dragAction = DragAction::TileDrag;
       dragAnchor = mesh->nearestAnchorGroup({clipCoord.x, clipCoord.y});
-      auto anchorPoint = dragAnchor.anchorPoint;
+      dragPoint = dragAnchor.anchorPoint;
       math::float3 anchVec = {dragTile->size.x, 0., 0.};
       math::float3 posVec =
-        GeoUtil::translate(clipCoord, -1. * math::float3(anchorPoint.x, anchorPoint.y, 0.));
+        GeoUtil::translate(clipCoord, -1. * math::float3(dragPoint.x, dragPoint.y, 0.));
       math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
       lastNormalVec = pNormal;
       mesh->setTileGroupZCoord(dragAnchor, GameUtil::RAISED_TILE_DEPTH);
@@ -272,8 +295,11 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   Texture* anchTex;
 
   TileGroup<HexTile> dragAnchor;
+  math::float2 dragPoint;
   DragAction dragAction = DragAction::noDrag;
   float rotationAngle = 0.;
+
+
   static constexpr float ROTATION_ANGLE = math::F_PI / 35.;
   static constexpr float PI_3 = math::F_PI / 3.;
   constexpr static float EPS = 0.1F;
