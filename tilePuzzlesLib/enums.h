@@ -3,6 +3,6 @@
 
 namespace tilepuzzles {
 enum Direction { left, right, up, down, none };
-enum DragAction { TileDrag, AnchorDrag, none };
+enum DragAction { TileDrag, AnchorDrag, noDrag };
 } // namespace tilepuzzles
 #endif

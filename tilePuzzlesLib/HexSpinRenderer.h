@@ -124,7 +124,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       }
       rotationAngle = 0.f;
       dragTile = nullptr;
-      dragAction = DragAction::none;
+      dragAction = DragAction::noDrag;
       mesh->processAnchorGroups();
     }
 
@@ -272,7 +272,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   Texture* anchTex;
 
   TileGroup<HexTile> dragAnchor;
-  DragAction dragAction = none;
+  DragAction dragAction = DragAction::noDrag;
   float rotationAngle = 0.;
   static constexpr float ROTATION_ANGLE = math::F_PI / 35.;
   static constexpr float PI_3 = math::F_PI / 3.;
