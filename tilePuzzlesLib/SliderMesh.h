@@ -59,7 +59,7 @@ struct SliderMesh : Mesh<TQuadVertexBuffer, Tile> {
   virtual void slideTiles(const Tile& tile) {
     auto tiles = tilesToSlide(tile);
     Tile* blank = blankTile();
-    std::for_each(tiles.begin(), tiles.end(), [blank](Tile* t) { t->swap(*blank); });
+    std::for_each(tiles.begin(), tiles.end(), [blank](Tile* t) { t->swap(blank); });
   }
 
   std::vector<Tile*> tilesToSlide(const Tile& tile) {

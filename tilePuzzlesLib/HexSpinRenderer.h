@@ -29,7 +29,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   virtual Path getTileMaterialPath() {
-    return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
+    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
   }
 
   virtual void initMesh() {
@@ -38,6 +38,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   virtual HexTile* onRightMouseDown(const float2& viewCoord) {
     mesh->shuffle();
+    mesh->orderGroups();
     math::float3 clipCoord = normalizeViewCoord(viewCoord);
     HexTile* tile = mesh->hitTest(clipCoord);
     needsDraw = true;
@@ -47,7 +48,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   virtual void onMouseMove(const float2& dragPosition) {
     if (dragTile) {
       math::float3 clipCoord = normalizeViewCoord(dragPosition);
-      float2 anchor = std::get<0>(dragAnchor);
+      float2 anchor = dragAnchor.anchorPoint;
       math::float3 anchVec = {dragTile->size.x, 0., 0.};
       math::float3 posVec = GeoUtil::translate(clipCoord, -1. * math::float3(anchor.x, anchor.y, 0.));
       math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
@@ -83,18 +84,23 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   virtual HexTile* onMouseDown(const math::float2& pos) {
     math::float3 clipCoord = normalizeViewCoord(pos);
-
+    dragTile = mesh->hitTest(clipCoord);
     auto anch = mesh->hitTestAnchor(clipCoord);
     if (anch) {
-      auto anchorPoint = std::get<0>(*anch);
-      bool drag = std::get<2>(*anch);
-      L.info("anchor hit", anchorPoint.x, anchorPoint.y, "can drag", drag);
-    }
-
-    dragTile = mesh->hitTest(clipCoord);
-    if (dragTile) {
+      auto anchorPoint = anch->anchorPoint;
+      bool anchDrag = anch->dragable;
+      math::int2 coord = anch->gridCoord;
+      L.info("anchor hit", anchorPoint.x, anchorPoint.y, "drag", anchDrag, "coord", coord.x, coord.y);
+      if (anchDrag) {
+        auto grp = anch->tileGroup;
+        for_each(grp.begin(), grp.end(), [](const auto& t) { t.logVertices(); });
+        mesh->rollTileGroups(*anch, Direction::up);
+        needsDraw = true;
+      }
+    } else if (dragTile) {
+      dragTile->logVertices();
       dragAnchor = mesh->nearestAnchorGroup({clipCoord.x, clipCoord.y});
-      auto anchorPoint = std::get<0>(dragAnchor);
+      auto anchorPoint = dragAnchor.anchorPoint;
       math::float3 anchVec = {dragTile->size.x, 0., 0.};
       math::float3 posVec =
         GeoUtil::translate(clipCoord, -1. * math::float3(anchorPoint.x, anchorPoint.y, 0.));
@@ -106,17 +112,21 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   virtual HexTile* onMouseUp(const math::float2& pos) {
-    float angle = snapToAngle();
-    if (angle != 0.) {
-      mesh->rotateTileGroup(dragAnchor, angle);
-      snapToPosition();
-      mesh->setTileGroupZCoord(dragAnchor, GameUtil::TILE_DEPTH);
-      needsDraw = true;
-    }
-    rotationAngle = 0.f;
-    dragTile = nullptr;
-    mesh->collectAnchors();
     math::float3 clipCoord = normalizeViewCoord(pos);
+    if (dragTile) {
+      float angle = snapToAngle();
+      if (angle != 0.) {
+        mesh->rotateTileGroup(dragAnchor, angle);
+        snapToPosition();
+        mesh->setTileGroupZCoord(dragAnchor, GameUtil::TILE_DEPTH);
+        needsDraw = true;
+      }
+      rotationAngle = 0.f;
+      dragTile = nullptr;
+      mesh->collectAnchors();
+      mesh->orderGroups();
+    }
+
     HexTile* tile = mesh->hitTest(clipCoord);
     return tile;
   }
@@ -211,7 +221,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
                       IndexBuffer::BufferDescriptor(mesh->vertexBufferAnchors->indexShapes,
                                                     mesh->vertexBufferAnchors->getIndexSize(), nullptr));
 
-    Path matPath = IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+    Path matPath = getAnchorMaterialPath(); // IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath.c_str());
     anchMaterial = Material::Builder().package(mat.data(), mat.size()).build(*engine);
     anchMatInstance = anchMaterial->createInstance();
@@ -239,7 +249,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       .castShadows(true)
       .castLight(true)
       .build(*engine, anchLight);
-    scene->addEntity(anchLight);
+    // scene->addEntity(anchLight);
   }
 
   virtual void destroy() {
@@ -260,7 +270,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   MaterialInstance* anchMatInstance = nullptr;
   Texture* anchTex;
 
-  std::tuple<math::float2, std::vector<HexTile>, bool, math::int2> dragAnchor;
+  TileGroup<HexTile> dragAnchor;
   float rotationAngle = 0.;
   static constexpr float ROTATION_ANGLE = math::F_PI / 35.;
   static constexpr float PI_3 = math::F_PI / 3.;
@@ -268,7 +278,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   static constexpr const char* CFG = R"({
     "type":"HexSpinner",
       "dimension": {
-        "rows": 2,
+        "rows": 3,
         "columns": 3
       }
   })";

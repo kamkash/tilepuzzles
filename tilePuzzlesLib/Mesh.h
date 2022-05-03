@@ -14,6 +14,7 @@
 #include "App.h"
 #include "TVertexBuffer.h"
 #include "Tile.h"
+#include "TileGroup.h"
 #include "Vertex.h"
 #include "enums.h"
 
@@ -31,7 +32,6 @@ namespace tilepuzzles {
 template <typename VB, typename T>
 
 struct Mesh {
-  using TileGroup = std::tuple<math::float2, std::vector<T>, bool, math::int2>;
 
   Mesh() {
   }
@@ -56,6 +56,9 @@ struct Mesh {
     vertexBuffer.reset(new VB(tileCount));
   }
 
+  virtual void orderGroups() {
+  }
+
   virtual T* const blankTile() {
     return nullptr;
   }
@@ -71,9 +74,10 @@ struct Mesh {
     return std::vector<T*>();
   }
 
-  virtual void
-  rotateTileGroup(const std::tuple<math::float2, std::vector<T>, bool, math::int2>& tileGroup,
-                  float angle) {
+  virtual void rotateTileGroup(const TileGroup<T>& tileGroup, float angle) {
+  }
+
+  virtual void rollTileGroups(const TileGroup<T>& tileGroup, Direction dir) {
   }
 
   void logTiles() {
@@ -94,7 +98,18 @@ struct Mesh {
     }
   }
 
-  virtual void setTileGroupZCoord(const TileGroup& tileGroup, float zCoord) {
+  virtual TileGroup<T>* tileGroupAt(int row, int column) {
+    auto tileIter =
+      std::find_if(tileGroupAnchors.begin(), tileGroupAnchors.end(),
+                   [row, column](const auto& t) { return row == t.gridCoord.x && column == t.gridCoord.y; });
+    if (tileIter != tileGroupAnchors.end()) {
+      return &*tileIter;
+    } else {
+      return nullptr;
+    }
+  }
+
+  virtual void setTileGroupZCoord(const TileGroup<T>& tileGroup, float zCoord) {
   }
 
   virtual T* hitTest(const math::float3& clipCoord) {
@@ -108,10 +123,10 @@ struct Mesh {
     }
   }
 
-  virtual TileGroup* hitTestAnchor(const math::float3& clipCoord) {
+  virtual TileGroup<T>* hitTestAnchor(const math::float3& clipCoord) {
     auto iter =
       std::find_if(tileGroupAnchors.begin(), tileGroupAnchors.end(), [&clipCoord](const auto& anch) {
-        math::float2 point = std::get<0>(anch);
+        math::float2 point = anch.anchorPoint;
         return abs(point.x - clipCoord.x) <= GeoUtil::EPS_3 && abs(point.y - clipCoord.y) <= GeoUtil::EPS_3;
       });
     if (iter != tileGroupAnchors.end()) {
@@ -215,12 +230,12 @@ struct Mesh {
     }
   }
 
-  TileGroup nearestAnchorGroup(const math::float2& point) {
-    auto init = TileGroup({100., 100.}, std::vector<T>(), 0, {0, 0});
+  TileGroup<T> nearestAnchorGroup(const math::float2& point) {
+    auto init = TileGroup<T>({100., 100.}, std::vector<T>(), 0, {0, 0});
     auto res =
       std::reduce(tileGroupAnchors.begin(), tileGroupAnchors.end(), init, [&point, this](auto a, auto b) {
-        math::float2 pointa = std::get<0>(a);
-        math::float2 pointb = std::get<0>(b);
+        math::float2 pointa = a.anchorPoint;
+        math::float2 pointb = b.anchorPoint;
         float adist = GeoUtil::tdist({point.x, point.y, 0.}, {pointa.x, pointa.y, 0.});
         float bdist = GeoUtil::tdist({point.x, point.y, 0.}, {pointb.x, pointb.y, 0.});
         return adist < bdist ? a : b;
@@ -239,7 +254,14 @@ struct Mesh {
       } else {
         canDrag = col == 5 || col == 11;
       }
-      TileGroup t = {point, anchTiles, canDrag, {0, 0}};
+      int colGroup = trunc(col / 3);
+      int rowGroup = trunc(row / 2);
+      if (colGroup % 2) {
+        rowGroup -= 1;
+      }
+      colGroup = canDrag ? colGroup : -1;
+      rowGroup = canDrag ? rowGroup : -1;
+      TileGroup<T> t(point, anchTiles, canDrag, {rowGroup, colGroup});
       tileGroupAnchors.push_back(t);
     }
   }
@@ -270,8 +292,7 @@ struct Mesh {
 
   std::shared_ptr<TQuadVertexBuffer> vertexBufferAnchors;
   std::vector<Tile> anchorTiles;
-  std::vector<TileGroup> tileGroupAnchors;
-  std::unordered_map<std::string, std::vector<T>> tileGroups;
+  std::vector<TileGroup<T>> tileGroupAnchors;
 
 #ifdef USE_SDL
   Logger L;

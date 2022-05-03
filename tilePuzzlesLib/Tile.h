@@ -48,16 +48,34 @@ struct Tile {
 #endif
   }
 
-  void swap(Tile& other) {
-    Point otherTopleft = other.topLeft;
-    math::int2 otherGridCoord = other.gridCoord;
-    other.topLeft = {topLeft.x, topLeft.y};
+  virtual void swap(Tile* other) {
+    Point otherTopleft = other->topLeft;
+    other->topLeft = {topLeft.x, topLeft.y};
     topLeft = {otherTopleft.x, otherTopleft.y};
-    other.updateVertices();
+    other->updateVertices();
     updateVertices();
 
-    other.gridCoord = {gridCoord.x, gridCoord.y};
+    math::int2 otherGridCoord = other->gridCoord;
+    other->gridCoord = {gridCoord.x, gridCoord.y};
     gridCoord = {otherGridCoord.x, otherGridCoord.y};
+  }
+
+  virtual void assign(Tile* other) {
+    topLeft = other->topLeft;
+    gridCoord = other->gridCoord;
+
+    (*quadVertices)[0].position = (*other->quadVertices)[0].position;
+    (*quadVertices)[1].position = (*other->quadVertices)[1].position;
+    (*quadVertices)[2].position = (*other->quadVertices)[2].position;
+    (*quadVertices)[3].position = (*other->quadVertices)[3].position;
+
+    (*iniQuadVertices)[0].position = (*other->iniQuadVertices)[0].position;
+    (*iniQuadVertices)[1].position = (*other->iniQuadVertices)[1].position;
+    (*iniQuadVertices)[2].position = (*other->iniQuadVertices)[2].position;
+    (*iniQuadVertices)[3].position = (*other->iniQuadVertices)[3].position;
+  }
+
+  virtual void translate(Direction dir, int rows, int columns) {
   }
 
   virtual void rotateAtAnchor(math::float2 anch, float angle) {
@@ -155,7 +173,7 @@ struct Tile {
   std::string tileId;
   int tileNum;
   bool isBlank = false;
-  math::int2 gridCoord;
+  math::int2 gridCoord = {0, 0};
   float depth = 0.F;
 #ifdef USE_SDL
   constexpr static Logger L = Logger::getLogger();

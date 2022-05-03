@@ -80,8 +80,6 @@ struct TRenderer : IRenderer {
       view->setViewport({0, 0, uint32_t(width), uint32_t(height)});
       camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
                             kFarPlane);
-      // camera->setProjection(kFieldOfViewDeg, aspect, kNearPlane, kFarPlane, Camera::Fov::VERTICAL);
-      // camera->lookAt({0.0f, 0.0f, kCameraDist}, kCameraCenter, kCameraUp);
     }
   }
 
@@ -118,6 +116,18 @@ struct TRenderer : IRenderer {
   virtual Path getTileMaterialPath() {
     return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
   }
+
+  virtual Path getBorderMaterialPath() {
+    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+  }  
+
+  virtual Path getBackgroundMaterialPath() {
+    return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
+  }
+
+  virtual Path getAnchorMaterialPath() {
+    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+  }  
 
   virtual void destroy() {
     engine->destroy(bgRenderable);
@@ -232,7 +242,7 @@ struct TRenderer : IRenderer {
     bgIb = IndexBuffer::Builder().indexCount(6).bufferType(IndexBuffer::IndexType::USHORT).build(*engine);
     bgIb->setBuffer(*engine, IndexBuffer::BufferDescriptor(QUAD_INDICES, sizeof(uint16_t) * 6, nullptr));
 
-    Path matPath = IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
+    Path matPath = getBackgroundMaterialPath(); // IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath.c_str());
     bgMaterial = Material::Builder().package(mat.data(), mat.size()).build(*engine);
 
@@ -284,7 +294,7 @@ struct TRenderer : IRenderer {
       borderIb->setBuffer(
         *engine, IndexBuffer::BufferDescriptor(vbBorder->indexShapes, vbBorder->getIndexSize(), nullptr));
 
-      Path matPath = IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+      Path matPath = getBorderMaterialPath(); // IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
       std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath.c_str());
       borderMaterial = Material::Builder().package(mat.data(), mat.size()).build(*engine);
 
