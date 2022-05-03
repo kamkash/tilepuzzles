@@ -75,6 +75,16 @@ struct Tile {
     (*iniQuadVertices)[3].position = (*other->iniQuadVertices)[3].position;
   }
 
+  virtual bool hasVertex(const math::float2& vert) {
+    return (abs(getVert(0).x - vert.x) <= EPS && abs(getVert(0).y - vert.y) <= EPS) ||
+           (abs(getVert(1).x - vert.x) <= EPS && abs(getVert(1).y - vert.y) <= EPS) ||
+           (abs(getVert(2).x - vert.x) <= EPS && abs(getVert(2).y - vert.y) <= EPS);
+  }
+
+  virtual math::float3 getVert(int index) {
+    return (*quadVertices)[index].position;
+  }  
+
   virtual void translate(Direction dir, int rows, int columns) {
   }
 
@@ -165,9 +175,7 @@ struct Tile {
 
   QuadVertices* quadVertices = nullptr;
   QuadIndices* quadIndicies = nullptr;
-
   QuadVertices* iniQuadVertices = nullptr;
-
   Point topLeft;
   Size size;
   std::string tileId;
@@ -175,6 +183,7 @@ struct Tile {
   bool isBlank = false;
   math::int2 gridCoord = {0, 0};
   float depth = 0.F;
+  constexpr static float EPS = 0.001F;
 #ifdef USE_SDL
   constexpr static Logger L = Logger::getLogger();
 #endif

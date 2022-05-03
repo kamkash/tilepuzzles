@@ -38,7 +38,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
 
   virtual HexTile* onRightMouseDown(const float2& viewCoord) {
     mesh->shuffle();
-    mesh->orderGroups();
+    mesh->processAnchorGroups();
     math::float3 clipCoord = normalizeViewCoord(viewCoord);
     HexTile* tile = mesh->hitTest(clipCoord);
     needsDraw = true;
@@ -87,6 +87,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     dragTile = mesh->hitTest(clipCoord);
     auto anch = mesh->hitTestAnchor(clipCoord);
     if (anch) {
+      dragAction = DragAction::AnchorDrag;
       auto anchorPoint = anch->anchorPoint;
       bool anchDrag = anch->dragable;
       math::int2 coord = anch->gridCoord;
@@ -98,7 +99,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
         needsDraw = true;
       }
     } else if (dragTile) {
-      dragTile->logVertices();
+      dragAction = DragAction::TileDrag;
       dragAnchor = mesh->nearestAnchorGroup({clipCoord.x, clipCoord.y});
       auto anchorPoint = dragAnchor.anchorPoint;
       math::float3 anchVec = {dragTile->size.x, 0., 0.};
@@ -123,8 +124,8 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       }
       rotationAngle = 0.f;
       dragTile = nullptr;
-      mesh->collectAnchors();
-      mesh->orderGroups();
+      dragAction = DragAction::none;
+      mesh->processAnchorGroups();
     }
 
     HexTile* tile = mesh->hitTest(clipCoord);
@@ -271,6 +272,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   Texture* anchTex;
 
   TileGroup<HexTile> dragAnchor;
+  DragAction dragAction = none;
   float rotationAngle = 0.;
   static constexpr float ROTATION_ANGLE = math::F_PI / 35.;
   static constexpr float PI_3 = math::F_PI / 3.;

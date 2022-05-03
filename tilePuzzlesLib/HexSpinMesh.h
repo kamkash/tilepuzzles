@@ -74,10 +74,50 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
         ++t;
       }
     }
-    collectAnchors();
+    processAnchorGroups();
   }
 
-  virtual void orderGroups() {
+  virtual void collectAnchors() {
+    tileGroupAnchors.clear();
+    Size size = tiles[0].size;
+    int rows = (GameUtil::HIGH_Y - GameUtil::LOW_Y) / size.y;
+    int columns = (GameUtil::HIGH_X - GameUtil::LOW_X) / size.x;
+    rows *= 2;    // two rows per group
+    columns *= 3; // three columns per group
+    math::float2 point;
+    for (int r = 0; r < rows; ++r) {
+      for (int c = 0; c < columns; ++c) {
+        point.x = GameUtil::LOW_X + c * size.x * .5;
+        point.y = GameUtil::HIGH_Y - r * size.y;
+        addAnchor(point, r, c);
+      }
+    }
+  }
+
+  virtual void addAnchor(const math::float2& point, int row, int col) {
+    std::vector<HexTile> anchTiles;
+    std::copy_if(tiles.begin(), tiles.end(), std::back_inserter(anchTiles),
+                 [&point](HexTile& t) { return t.hasVertex(point); });
+    if (anchTiles.size() == 6) {
+      bool canDrag = false;
+      if (row % 2) {
+        canDrag = col == 2 || col == 8;
+      } else {
+        canDrag = col == 5 || col == 11;
+      }
+      int colGroup = trunc(col / 3);
+      int rowGroup = trunc(row / 2);
+      if (colGroup % 2) {
+        rowGroup -= 1;
+      }
+      colGroup = canDrag ? colGroup : -1;
+      rowGroup = canDrag ? rowGroup : -1;
+      TileGroup<HexTile> t(point, anchTiles, canDrag, {rowGroup, colGroup});
+      tileGroupAnchors.push_back(t);
+    }
+  }
+
+  virtual void orderAnchorGroups() {
     const float sqrt3o2 = sqrt(3.) / 2.;
     const int rows = configMgr.config["dimension"]["rows"].get<int>();
     const int columns = configMgr.config["dimension"]["columns"].get<int>();
@@ -90,6 +130,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
         std::vector<HexTile> tileGroup = std::vector<HexTile>();
         math::float2 pt = group.anchorPoint;
 
+        // top half
         float yCoord = pt.y + size.y * .5;
         math::float3 tileCenter = {pt.x - size.x * .5, yCoord, 0.};
         HexTile* tile = hitTest(tileCenter);
@@ -109,7 +150,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
           tileGroup.push_back(*tile);
         }
 
-        /////////////////////
+        // bottom half
         yCoord = pt.y - size.y * .5;
         tileCenter = {pt.x - size.x * .5, yCoord, 0.};
         tile = hitTest(tileCenter);
@@ -181,7 +222,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
       int anchIndex = GameUtil::trand(0, anchCount);
       auto anchor = tileGroupAnchors[anchIndex];
       rotateTileGroup(anchor, angle);
-      collectAnchors();
+      processAnchorGroups();
     }
   }
 
@@ -218,7 +259,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
       assignTileGroup(*rollerGroups[i + 1], *rollerGroups[i]);
     }
     assignTileGroup(grp0, *rollerGroups[rollerGroups.size() - 1]);
-    collectAnchors();
+    processAnchorGroups();
   }
 
   std::vector<TileDto> cloneTileGroup(const TileGroup<HexTile>& srcGrp) {
@@ -239,7 +280,7 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
         translateTileGroup(g->tileGroup, dir);
       }
     });
-    collectAnchors();
+    processAnchorGroups();
   }
 
   void translateTileGroup(std::vector<HexTile>& shiftTiles, Direction dir) {

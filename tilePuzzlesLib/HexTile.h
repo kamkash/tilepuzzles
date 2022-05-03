@@ -75,7 +75,7 @@ struct HexTile : Tile {
 
     (*iniTriangleVertices)[0].position = (*dto.iniTriangleVertices)[0].position;
     (*iniTriangleVertices)[1].position = (*dto.iniTriangleVertices)[1].position;
-    (*iniTriangleVertices)[2].position = (*dto.iniTriangleVertices)[2].position;              
+    (*iniTriangleVertices)[2].position = (*dto.iniTriangleVertices)[2].position;
   }
 
   virtual void translate(Direction dir, int rows, int columns) {
@@ -261,13 +261,13 @@ struct HexTile : Tile {
     return (*triangleVertices)[2].position[1] < (*triangleVertices)[0].position[1];
   }
 
-  bool hasVertex(const math::float2& vert) {
+  virtual bool hasVertex(const math::float2& vert) {
     return (abs(getVert(0).x - vert.x) <= EPS && abs(getVert(0).y - vert.y) <= EPS) ||
            (abs(getVert(1).x - vert.x) <= EPS && abs(getVert(1).y - vert.y) <= EPS) ||
            (abs(getVert(2).x - vert.x) <= EPS && abs(getVert(2).y - vert.y) <= EPS);
   }
 
-  math::float3 getVert(int index) {
+  virtual math::float3 getVert(int index) {
     return (*triangleVertices)[index].position;
   }
 
@@ -303,11 +303,10 @@ struct HexTile : Tile {
   TriangleVertices* triangleVertices;
   TriangleIndices* triangleIndices;
   TriangleVertices* iniTriangleVertices = nullptr;
+  std::string groupKey;
 #ifndef __ANDROID__
   constexpr static Logger L = Logger::getLogger();
 #endif
-  constexpr static float EPS = 0.001F;
-  std::string groupKey;
 };
 
 } // namespace tilepuzzles

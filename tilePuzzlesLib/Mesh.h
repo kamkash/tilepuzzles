@@ -56,8 +56,7 @@ struct Mesh {
     vertexBuffer.reset(new VB(tileCount));
   }
 
-  virtual void orderGroups() {
-  }
+
 
   virtual T* const blankTile() {
     return nullptr;
@@ -243,45 +242,19 @@ struct Mesh {
     return res;
   }
 
-  void addAnchor(const math::float2& point, int row, int col) {
-    std::vector<T> anchTiles;
-    std::copy_if(tiles.begin(), tiles.end(), std::back_inserter(anchTiles),
-                 [&point](T& t) { return t.hasVertex(point); });
-    if (anchTiles.size() == 6) {
-      bool canDrag = false;
-      if (row % 2) {
-        canDrag = col == 2 || col == 8;
-      } else {
-        canDrag = col == 5 || col == 11;
-      }
-      int colGroup = trunc(col / 3);
-      int rowGroup = trunc(row / 2);
-      if (colGroup % 2) {
-        rowGroup -= 1;
-      }
-      colGroup = canDrag ? colGroup : -1;
-      rowGroup = canDrag ? rowGroup : -1;
-      TileGroup<T> t(point, anchTiles, canDrag, {rowGroup, colGroup});
-      tileGroupAnchors.push_back(t);
-    }
+  virtual void processAnchorGroups() {
+    collectAnchors();
+    orderAnchorGroups();
   }
 
-  void collectAnchors() {
-    tileGroupAnchors.clear();
-    Size size = tiles[0].size;
-    int rows = (GameUtil::HIGH_Y - GameUtil::LOW_Y) / size.y;
-    int columns = (GameUtil::HIGH_X - GameUtil::LOW_X) / size.x;
-    rows *= 2;    // two rows per group
-    columns *= 3; // three columns per group
-    math::float2 point;
-    for (int r = 0; r < rows; ++r) {
-      for (int c = 0; c < columns; ++c) {
-        point.x = GameUtil::LOW_X + c * size.x * .5;
-        point.y = GameUtil::HIGH_Y - r * size.y;
-        addAnchor(point, r, c);
-      }
-    }
+  virtual void orderAnchorGroups() {
   }
+
+  virtual void collectAnchors() {
+  }
+
+  virtual void addAnchor(const math::float2& point, int row, int col) {
+  }  
 
   ConfigMgr configMgr;
   std::shared_ptr<VB> vertexBuffer;
