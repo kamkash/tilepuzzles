@@ -56,8 +56,6 @@ struct Mesh {
     vertexBuffer.reset(new VB(tileCount));
   }
 
-
-
   virtual T* const blankTile() {
     return nullptr;
   }
@@ -73,7 +71,7 @@ struct Mesh {
     return std::vector<T*>();
   }
 
-  virtual void rotateTileGroup(const TileGroup<T>& tileGroup, float angle) {
+  virtual void rotateTileGroup(TileGroup<T>& tileGroup, float angle) {
   }
 
   virtual void rollTileGroups(const TileGroup<T>& tileGroup, Direction dir) {
@@ -108,8 +106,10 @@ struct Mesh {
     }
   }
 
-  virtual void setTileGroupZCoord(const TileGroup<T>& tileGroup, float zCoord) {
+  virtual void setTileGroupZCoord(TileGroup<T>& tileGroup, float zCoord) {
   }
+
+
 
   virtual T* hitTest(const math::float3& clipCoord) {
     auto tileIter = std::find_if(tiles.begin(), tiles.end(), [&clipCoord](const T& t) {
@@ -254,7 +254,7 @@ struct Mesh {
   }
 
   virtual void addAnchor(const math::float2& point, int row, int col) {
-  }  
+  }
 
   ConfigMgr configMgr;
   std::shared_ptr<VB> vertexBuffer;

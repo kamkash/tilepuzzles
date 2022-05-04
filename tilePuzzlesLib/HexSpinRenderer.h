@@ -35,7 +35,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   virtual Path getTileMaterialPath() {
-    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+    return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
   }
 
   virtual void initMesh() {
@@ -91,7 +91,6 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       float dx = abs(clipCoord.x - dragPoint.x);
       float dy = abs(clipCoord.y - dragPoint.y);
       float dist = distance(clipCoord, math::float3(dragPoint.x, dragPoint.y, 0.F));
-      // L.info("dist, size.x", dist, dragTile->size.x);
       if (dist > dragTile->size.x) {
         Direction dir = dx > dy ? (clipCoord.x - dragPoint.x > 0) ? Direction::right : Direction::left
                                 : (clipCoord.y - dragPoint.y > 0) ? Direction::up : Direction::down;
@@ -126,8 +125,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       dragAnchor = mesh->nearestAnchorGroup({clipCoord.x, clipCoord.y});
       dragPoint = dragAnchor.anchorPoint;
       math::float3 anchVec = {dragTile->size.x, 0., 0.};
-      math::float3 posVec =
-        GeoUtil::translate(clipCoord, -1. * math::float3(dragPoint.x, dragPoint.y, 0.));
+      math::float3 posVec = GeoUtil::translate(clipCoord, -1. * math::float3(dragPoint.x, dragPoint.y, 0.));
       math::float3 pNormal = GeoUtil::tcross(anchVec, posVec);
       lastNormalVec = pNormal;
       mesh->setTileGroupZCoord(dragAnchor, GameUtil::RAISED_TILE_DEPTH);
@@ -142,12 +140,12 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
       if (angle != 0.) {
         mesh->rotateTileGroup(dragAnchor, angle);
         snapToPosition();
-        mesh->setTileGroupZCoord(dragAnchor, GameUtil::TILE_DEPTH);
         needsDraw = true;
       }
       rotationAngle = 0.f;
       dragTile = nullptr;
       dragAction = DragAction::noDrag;
+      mesh->setTileGroupZCoord(dragAnchor, GameUtil::TILE_DEPTH);
       mesh->processAnchorGroups();
     }
 
@@ -245,7 +243,7 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
                       IndexBuffer::BufferDescriptor(mesh->vertexBufferAnchors->indexShapes,
                                                     mesh->vertexBufferAnchors->getIndexSize(), nullptr));
 
-    Path matPath = getAnchorMaterialPath(); // IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+    Path matPath = getAnchorMaterialPath();
     std::vector<unsigned char> mat = IOUtil::loadBinaryAsset(matPath.c_str());
     anchMaterial = Material::Builder().package(mat.data(), mat.size()).build(*engine);
     anchMatInstance = anchMaterial->createInstance();
@@ -287,6 +285,15 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
     TRenderer::destroy();
   }
 
+  void logGroupDepth(const std::string& msg) {
+    L.info(msg + "*********************");
+    std::for_each(dragAnchor.tileGroup.begin(), dragAnchor.tileGroup.end(), [this](HexTile& t) {
+      L.info((*t.triangleVertices)[0].position.z, (*t.triangleVertices)[1].position.z,
+             (*t.triangleVertices)[2].position.z);
+    });
+    L.info("--------------------");
+  }
+
   VertexBuffer* anchVb;
   IndexBuffer* anchIb;
   Entity anchRenderable;
@@ -299,15 +306,14 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   DragAction dragAction = DragAction::noDrag;
   float rotationAngle = 0.;
 
-
   static constexpr float ROTATION_ANGLE = math::F_PI / 35.;
   static constexpr float PI_3 = math::F_PI / 3.;
   constexpr static float EPS = 0.1F;
   static constexpr const char* CFG = R"({
     "type":"HexSpinner",
       "dimension": {
-        "rows": 3,
-        "columns": 3
+        "rows": 2,
+        "columns": 2
       }
   })";
 };

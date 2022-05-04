@@ -114,7 +114,7 @@ struct TRenderer : IRenderer {
   }
 
   virtual Path getTileMaterialPath() {
-    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
+    return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
   }
 
   virtual Path getBorderMaterialPath() {
@@ -390,6 +390,7 @@ struct TRenderer : IRenderer {
       .material(0, matInstance)
       .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, 0, mesh->vertexBuffer->numIndices)
       .receiveShadows(false)
+      .culling(false)
       .castShadows(false)
       .build(*engine, renderable);
 

@@ -9,7 +9,10 @@ material {
     ],
     shadingModel : unlit,
     culling : none,
-    blending : opaque
+    blending : opaque,
+//    colorWrite: true,
+//    depthWrite: true,
+//    depthCulling : true,
 }
 
 fragment {

@@ -7,8 +7,12 @@ material {
     requires : [
         uv0
     ],
+    culling : frontAndBack,
+//    culling : none,
+    colorWrite: true,
+    depthWrite: true,
+    depthCulling : true,
     shadingModel : unlit,
-    culling : none,
     blending : transparent,
     transparency : twoPassesTwoSides
 }

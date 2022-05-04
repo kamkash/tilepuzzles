@@ -203,16 +203,15 @@ struct HexSpinMesh : Mesh<TriangleVertexBuffer, HexTile> {
                   });
   }
 
-  virtual void rotateTileGroup(const TileGroup<HexTile>& tileGroup, float angle) {
-    std::vector<HexTile> grp = tileGroup.tileGroup;
+  virtual void rotateTileGroup(TileGroup<HexTile>& tileGroup, float angle) {
     math::float2 pt = tileGroup.anchorPoint;
-    std::for_each(grp.begin(), grp.end(), [angle, &pt](HexTile& t) { t.rotateAtAnchor(pt, angle); });
+    std::for_each(tileGroup.tileGroup.begin(), tileGroup.tileGroup.end(),
+                  [this, angle, &pt](HexTile& t) { t.rotateAtAnchor(pt, angle); });
   }
 
-  virtual void setTileGroupZCoord(const std::tuple<math::float2, std::vector<HexTile>>& tileGroup,
-                                  float zCoord) {
-    std::vector<HexTile> grp = std::get<1>(tileGroup);
-    std::for_each(grp.begin(), grp.end(), [zCoord](HexTile& t) { t.setVertexZCoord(zCoord); });
+  virtual void setTileGroupZCoord(TileGroup<HexTile>& tileGroup, float zCoord) {
+    std::for_each(tileGroup.tileGroup.begin(), tileGroup.tileGroup.end(),
+                  [zCoord](HexTile& t) { t.setVertexZCoord(zCoord); });
   }
 
   virtual void shuffle() {

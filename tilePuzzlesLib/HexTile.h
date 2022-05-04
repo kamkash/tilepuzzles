@@ -192,9 +192,8 @@ struct HexTile : Tile {
   }
 
   virtual void setVertexZCoord(float zCoord) {
-    (*triangleVertices)[0].position.z = zCoord;
-    (*triangleVertices)[1].position.z = zCoord;
-    (*triangleVertices)[2].position.z = zCoord;
+    (*triangleVertices)[0].position.z = (*triangleVertices)[1].position.z =
+      (*triangleVertices)[2].position.z = zCoord;
   }
 
   /* A utility function to calculate area of triangle formed by (x1, y1),
