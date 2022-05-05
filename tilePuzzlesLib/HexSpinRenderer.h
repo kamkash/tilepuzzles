@@ -286,12 +286,8 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   void logGroupDepth(const std::string& msg) {
-    L.info(msg + "*********************");
     std::for_each(dragAnchor.tileGroup.begin(), dragAnchor.tileGroup.end(), [this](HexTile& t) {
-      L.info((*t.triangleVertices)[0].position.z, (*t.triangleVertices)[1].position.z,
-             (*t.triangleVertices)[2].position.z);
     });
-    L.info("--------------------");
   }
 
   VertexBuffer* anchVb;

@@ -114,7 +114,7 @@ struct TRenderer : IRenderer {
   }
 
   virtual Path getTileMaterialPath() {
-    return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
+    return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
   }
 
   virtual Path getBorderMaterialPath() {

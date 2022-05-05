@@ -109,8 +109,6 @@ struct Mesh {
   virtual void setTileGroupZCoord(TileGroup<T>& tileGroup, float zCoord) {
   }
 
-
-
   virtual T* hitTest(const math::float3& clipCoord) {
     auto tileIter = std::find_if(tiles.begin(), tiles.end(), [&clipCoord](const T& t) {
       return t.onClick({clipCoord.x, clipCoord.y});
