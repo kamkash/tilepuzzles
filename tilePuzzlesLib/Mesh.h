@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "AnchorTile.h"
 #include "App.h"
 #include "TVertexBuffer.h"
 #include "Tile.h"
@@ -241,8 +242,6 @@ struct Mesh {
   }
 
   virtual void processAnchorGroups() {
-    collectAnchors();
-    orderAnchorGroups();
   }
 
   virtual void orderAnchorGroups() {
@@ -262,7 +261,7 @@ struct Mesh {
   std::vector<T> borderTiles;
 
   std::shared_ptr<TQuadVertexBuffer> vertexBufferAnchors;
-  std::vector<Tile> anchorTiles;
+  std::vector<AnchorTile> anchorTiles;
   std::vector<TileGroup<T>> tileGroupAnchors;
 
 #ifdef USE_SDL

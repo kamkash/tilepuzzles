@@ -74,6 +74,19 @@ struct RollerRenderer : TRenderer<TQuadVertexBuffer, Tile> {
     }
   })";
 
+  //    static constexpr const char *CFG = R"({
+  //    "type":"roller",
+  //    "dimension": {
+  //      "count": 25
+  //    },
+  //    "border": {
+  //      "top":0,
+  //      "left":0,
+  //      "width": 4,
+  //      "height": 4
+  //    }
+  //  })";
+
 }; // namespace tilepuzzles
 
 } // namespace tilepuzzles

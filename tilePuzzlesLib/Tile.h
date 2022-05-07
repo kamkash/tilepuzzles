@@ -83,7 +83,7 @@ struct Tile {
 
   virtual math::float3 getVert(int index) {
     return (*quadVertices)[index].position;
-  }  
+  }
 
   virtual void translate(Direction dir, int rows, int columns) {
   }
@@ -117,6 +117,11 @@ struct Tile {
     }
   }
 
+  virtual void updateNormals(const math::float3 norm) {
+    (*quadVertices)[0].normal = (*quadVertices)[1].normal = (*quadVertices)[2].normal =
+      (*quadVertices)[3].normal = norm;
+  }
+
   virtual void setVertexZCoord(float zCoord) {
     (*quadVertices)[0].position.z = (*quadVertices)[1].position.z = (*quadVertices)[2].position.z =
       (*quadVertices)[3].position.z = zCoord;
@@ -139,6 +144,7 @@ struct Tile {
   void initVertices(int texIndex, float texWidth) {
     updateVertices();
     updateTexCoords(texIndex, texWidth);
+    updateNormals({0.F, 0.F, 0.F});
     // logVertices();
   }
 
