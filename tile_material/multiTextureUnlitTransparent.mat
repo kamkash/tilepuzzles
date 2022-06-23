@@ -32,7 +32,6 @@ vertex {
 fragment {
     void material(inout MaterialInputs material) {
         prepareMaterial(material);
-        material.baseColor = texture(materialParams_albedo1, getUV0());
         if (variable_samplerNumber.x != 0.F) {
             material.baseColor = texture(materialParams_albedo1, getUV0());
         } else {

@@ -6,6 +6,7 @@
 #include <SDL.h>
 #endif
 
+#include "App.h"
 #include "GameUtil.h"
 #include "HexSpinRenderer.h"
 #include "IRenderer.h"
@@ -57,10 +58,6 @@ using utils::Path;
 
 namespace tilepuzzles {
 
-static constexpr int WINDOW_WIDTH = 320;
-static constexpr int WINDOW_HEIGHT = 320;
-static constexpr int WINDOW_X_POS = 300;
-static constexpr int WINDOW_Y_POS = 300;
 static constexpr int ACTION_DOWN = 0;
 static constexpr int ACTION_UP = 1;
 static constexpr int ACTION_MOVE = 2;
@@ -71,23 +68,27 @@ static constexpr uint32_t WINDOW_FLAGS = SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIG
 
 struct TAppWin {
   void destroySwapChain() {
-    if (renderer != nullptr) {
-      renderer->destroySwapChain();
+    if (app.engine && swapChain) {
+      app.engine->destroy(swapChain);
+      swapChain = nullptr;
     }
   }
 
   void createSwapChain(void* nativeWindow) {
-    if (renderer != nullptr) {
-      renderer->createSwapChain(nativeWindow);
-    }
+    swapChain = app.engine->createSwapChain(nativeWindow);
   }
 
   void init() {
+    app.engine = Engine::create();
+    app.scene = app.engine->createScene();
+    app.filaRenderer = app.engine->createRenderer();
+    app.skybox =
+      Skybox::Builder().showSun(true).color({0. / 255., 255. / 255., 0. / 255., 1.f}).build(*app.engine);
 #ifdef USE_SDL
     ASSERT_POSTCONDITION(SDL_Init(SDL_INIT_EVENTS) == 0, "SDL_Init Failure");
     GameUtil::GameUtil::init();
     createRenderer();
-    renderer->init();
+    initRenderer();
     createWinow();
     setup_window();
     setup_animating_scene();
@@ -96,16 +97,25 @@ struct TAppWin {
 #else
     GameUtil::GameUtil::init();
     createRenderer();
-    renderer->init();
+    initRenderer();
     setup_animating_scene();
 #endif
+  }
+
+  void initRenderer() {
+    app.viewportRect = vp;
+    renderer->init(app);
+    if (roRenderer != nullptr) {
+      app.viewportRect = roVp;
+      roRenderer->init(app);
+    }
   }
 
   void createWinow() {
     auto title = std::string("Tile Puzzles");
 #ifdef USE_SDL
-    sdl_window =
-      SDL_CreateWindow(title.c_str(), WINDOW_X_POS, WINDOW_Y_POS, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_FLAGS);
+    sdl_window = SDL_CreateWindow(title.c_str(), GameUtil::WINDOW_X_POS, GameUtil::WINDOW_Y_POS,
+                                  GameUtil::WINDOW_WIDTH, GameUtil::WINDOW_HEIGHT, WINDOW_FLAGS);
 #endif
   }
 
@@ -114,6 +124,17 @@ struct TAppWin {
   }
 
   void cleanup() {
+    renderer->destroy();
+    if (roRenderer != nullptr) {
+      roRenderer->destroy();
+    }
+    if (app.engine && swapChain) {
+      app.engine->destroy(swapChain);
+      swapChain = nullptr;
+    }
+    app.engine->destroy(app.skybox);
+    app.engine->destroy(app.scene);
+    Engine::destroy(&app.engine);
     destroy_window();
 #ifdef USE_SDL
     SDL_Quit();
@@ -121,7 +142,6 @@ struct TAppWin {
   }
 
   void destroy_window() {
-    renderer->destroy();
 #ifdef USE_SDL
     SDL_DestroyWindow(sdl_window);
 #endif
@@ -129,34 +149,44 @@ struct TAppWin {
 
   void setup_animating_scene() {
     renderer->draw();
+    if (roRenderer)
+      roRenderer->draw();
     needsDraw = true;
     onNewFrame = animation_new_frame;
   }
 
   void createRenderer() {
     // renderer = std::shared_ptr<IRenderer>(new SliderRenderer());
-    // renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
-    renderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
+    // roRenderer = std::shared_ptr<IRenderer>(new SliderRenderer());
+    // roRenderer->setReadOnly(true);
+
+    renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
+    roRenderer = std::shared_ptr<IRenderer>(new RollerRenderer());
+    roRenderer->setReadOnly(true);
+
+    // roRenderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
+    // roRenderer->setReadOnly(true);
+    // renderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
   }
 
-  /**
-   * @brief
-   *
-   * @param win
-   * @param dt
-   */
   static void animation_new_frame(TAppWin& win, double dt) {
-    if (win.renderer->getSwapChain()) {
+    if (win.swapChain) {
       win.renderer->update(dt);
       win.renderer->animate(dt);
+      if (win.roRenderer) {
+        win.roRenderer->update(dt);
+        win.roRenderer->animate(dt);
+      }
       win.needsDraw = true;
     }
   }
 
   void setup_window() {
+    void* nativeWindow;
+    void* nativeSwapChain;
 #ifdef USE_SDL
-    void* nativeWindow = ::getNativeWindow(sdl_window);
-    void* nativeSwapChain = nativeWindow;
+    nativeWindow = ::getNativeWindow(sdl_window);
+    nativeSwapChain = nativeWindow;
 #endif
 #if defined(__APPLE__)
     void* metalLayer = nullptr;
@@ -173,7 +203,7 @@ struct TAppWin {
 #endif
 #endif
 #ifdef USE_SDL
-    swapChain = renderer->createSwapChain(nativeSwapChain);
+    createSwapChain(nativeSwapChain);
     int width, height;
     SDL_GetWindowSize(sdl_window, &width, &height);
     resize_window(width, height);
@@ -193,6 +223,8 @@ struct TAppWin {
 #endif
 #endif
     renderer->resize(width, height);
+    if (roRenderer)
+      roRenderer->resize(width, height);
     needsDraw = true;
   }
 
@@ -237,7 +269,9 @@ struct TAppWin {
       Uint64 startTicks = SDL_GetPerformanceCounter();
 
       if (!UTILS_HAS_THREADING) {
-        renderer->executeEngine();
+        if (app.engine) {
+          app.engine->execute();
+        }
       }
       while (SDL_PollEvent(&event) != 0) {
         switch (event.type) {
@@ -263,7 +297,6 @@ struct TAppWin {
               }
 
               case SDL_BUTTON_RIGHT:
-                // renderer->shuffle();
                 math::float2 mouseDownPos = {float(event.button.x), float(event.button.y)};
                 renderer->onRightMouseDown(mouseDownPos);
                 break;
@@ -320,7 +353,13 @@ struct TAppWin {
         continue;
       }
 
-      renderer->filaRender();
+      if (app.filaRenderer->beginFrame(swapChain)) {
+        app.filaRenderer->render(renderer->getView());
+        if (roRenderer)
+          app.filaRenderer->render(roRenderer->getView());
+        app.filaRenderer->endFrame();
+      }
+
       needsDraw = false;
       lastDrawTime = time;
       Uint64 frameTicks = endTicks - startTicks;
@@ -359,8 +398,13 @@ struct TAppWin {
   double time = 0.0;
   double lastDrawTime = 0.0;
   std::shared_ptr<IRenderer> renderer;
+  std::shared_ptr<IRenderer> roRenderer;
   SwapChain* swapChain = nullptr;
   GameContext* gameContext;
+  App app;
+  Rect vp = {.topLeft = {320, 0}, .size = {320, 320}};
+
+  Rect roVp = {.topLeft = {0., 320. - 240}, .size = {240, 240}};
 #ifdef USE_SDL
   Logger L;
 #endif

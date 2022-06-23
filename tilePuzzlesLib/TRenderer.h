@@ -67,32 +67,37 @@ struct TRenderer : IRenderer {
 
   virtual void initMesh() = 0;
 
-  virtual void filaRender() {
-    if (filaRenderer->beginFrame(swapChain)) {
-      filaRenderer->render(view);
-      filaRenderer->endFrame();
-    }
+  virtual bool isReadOnly() {
+    return readOnly;
+  }
+
+  virtual void setReadOnly(bool readOnly) {
+    this->readOnly = readOnly;
+  }
+
+  virtual View* getView() {
+    return view;
   }
 
   virtual void resize(int width, int height) {
     if (width > 0 && height > 0) {
-      const float aspect = float(width) / float(height);
-      view->setViewport({0, 0, uint32_t(width), uint32_t(height)});
+      const float aspect = viewPortDim.size.x / viewPortDim.size.y;
+      int32_t left = int32_t(viewPortDim.topLeft.x);
+      int32_t bottom = int32_t(viewPortDim.topLeft.y);
+      uint32_t vpwidth = uint32_t(viewPortDim.size.x);
+      uint32_t vpheight = uint32_t(viewPortDim.size.y);
+      view->setViewport({left, bottom, vpwidth, vpheight});
       camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
                             kFarPlane);
     }
   }
 
-  virtual void executeEngine() {
-    if (engine) {
-      engine->execute();
-    }
-  }
-
-  virtual void init() {
+  virtual void init(const App& app) {
+    viewPortDim = app.viewportRect;
     initMesh();
-    engine = Engine::create();
-    filaRenderer = engine->createRenderer();
+    engine = app.engine;
+    skybox = app.skybox;
+    scene = engine->createScene();
     utils::EntityManager& em = utils::EntityManager::get();
     em.create(1, &cameraEntity);
     camera = engine->createCamera(cameraEntity);
@@ -100,17 +105,7 @@ struct TRenderer : IRenderer {
     view->setAmbientOcclusionOptions({.enabled = true});
     view->setBloomOptions({.enabled = true});
     view->setCamera(camera);
-    scene = engine->createScene();
     view->setScene(scene);
-    app.camera = camera;
-    app.view = view;
-  }
-
-  virtual void destroySwapChain() {
-    if (engine && swapChain) {
-      engine->destroy(swapChain);
-      swapChain = nullptr;
-    }
   }
 
   virtual Path getTileMaterialPath() {
@@ -119,7 +114,7 @@ struct TRenderer : IRenderer {
 
   virtual Path getBorderMaterialPath() {
     return IOUtil::getMaterialPath(FILAMAT_FILE_UNLIT.data());
-  }  
+  }
 
   virtual Path getBackgroundMaterialPath() {
     return IOUtil::getMaterialPath(FILAMAT_FILE_OPAQUE.data());
@@ -127,7 +122,7 @@ struct TRenderer : IRenderer {
 
   virtual Path getAnchorMaterialPath() {
     return IOUtil::getMaterialPath(FILAMAT_FILE_MULTI_UNLIT.data());
-  }  
+  }
 
   virtual void destroy() {
     engine->destroy(bgRenderable);
@@ -146,7 +141,6 @@ struct TRenderer : IRenderer {
       engine->destroy(borderMaterial);
     }
 
-    engine->destroy(skybox);
     engine->destroy(renderable);
     engine->destroy(matInstance);
     engine->destroy(material);
@@ -160,29 +154,11 @@ struct TRenderer : IRenderer {
     engine->destroy(scene);
     engine->destroy(view);
     engine->destroyCameraComponent(cameraEntity);
-    engine->destroy(cameraEntity);
-    engine->destroy(swapChain);
     engine->destroy(filaRenderer);
-    Engine::destroy(&engine);
-  }
-
-  float getAspectRatio() {
-    float aspectRation = 1.F;
-    uint32_t width = view->getViewport().width;
-    uint32_t height = view->getViewport().height;
-    if (width && height) {
-      aspectRation = float(width) / float(height);
-    }
-    return aspectRation;
-  }
-
-  virtual SwapChain* createSwapChain(void* nativeSwapChain) {
-    swapChain = engine->createSwapChain(nativeSwapChain);
-    return swapChain;
   }
 
   virtual void update(double dt) {
-    if (needsDraw) {
+    if (needsDraw && !readOnly) {
       needsDraw = false;
       vb->setBufferAt(*engine, 0,
                       VertexBuffer::BufferDescriptor(mesh->vertexBuffer->cloneVertices(),
@@ -355,8 +331,9 @@ struct TRenderer : IRenderer {
     TextureSampler sampler(MinFilter::LINEAR, MagFilter::LINEAR);
 
     // Set up view
-    skybox = Skybox::Builder().showSun(true).color({0. / 255., 255. / 255., 0. / 255., 1.f}).build(*engine);
-    scene->setSkybox(skybox);
+    if (!readOnly) {
+      scene->setSkybox(skybox);
+    }
     view->setCamera(camera);
     view->setPostProcessingEnabled(false);
 
@@ -452,17 +429,48 @@ struct TRenderer : IRenderer {
   }
 
   virtual SwapChain* getSwapChain() {
-    return swapChain;
+    // return swapChain;
+    return nullptr;
   }
 
   math::float3 normalizeViewCoord(const math::float2& viewCoord) const {
-    math::mat4 projMat = app.camera->getProjectionMatrix();
-    math::mat4 invProjMat = app.camera->inverseProjection(projMat);
-    float width = float(app.view->getViewport().width);
-    float height = float(app.view->getViewport().height);
-    math::float4 normalizedView = {viewCoord.x * 2. / width - 1., viewCoord.y * -2. / height + 1., 0., 1.};
+    math::mat4 projMat = camera->getProjectionMatrix();
+    math::mat4 invProjMat = camera->inverseProjection(projMat);
+    float width = float(GameUtil::WINDOW_WIDTH);
+    float height = float(GameUtil::WINDOW_HEIGHT);
+    float normX =
+      viewCoord.x * 2. / (width - viewPortDim.topLeft.x) + 1 - 2. * width / (width - viewPortDim.topLeft.x);
+    float normY = -2. * viewCoord.y / (height - viewPortDim.topLeft.y) + 1;
+    math::float4 normalizedView = {normX, normY, 0., 1.};
     math::float4 clipCoord = invProjMat * normalizedView;
     return {clipCoord.x, clipCoord.y, clipCoord.z};
+  }
+
+  void logMatrices() const {
+    math::mat4 projMat = camera->getProjectionMatrix();
+    math::mat4 invProjMat = math::details::matrix::inverse(projMat);
+    math::mat4 viewMat = camera->getViewMatrix();
+    math::mat4 invViewMat = math::details::matrix::inverse(viewMat);
+    math::mat4 modelMat = camera->getModelMatrix();
+    math::mat4 invModelMat = math::details::matrix::inverse(modelMat);
+    math::mat4 normMatrix = invProjMat * invViewMat * invModelMat;
+
+    logMat44(projMat);
+    logMat44(viewMat);
+    logMat44(modelMat);
+
+    L.info("------------------------------------------------------------");
+    logMat44(invProjMat);
+    logMat44(invViewMat);
+    logMat44(invModelMat);
+  }
+
+  void logMat44(const math::mat4& projMat) const {
+    L.info("------------------------------------------------------------");
+    L.info(projMat[0][0], projMat[0][1], projMat[0][2], projMat[0][3]);
+    L.info(projMat[1][0], projMat[1][1], projMat[1][2], projMat[1][3]);
+    L.info(projMat[2][0], projMat[2][1], projMat[2][2], projMat[2][3]);
+    L.info(projMat[3][0], projMat[3][1], projMat[3][2], projMat[3][3]);
   }
 
   std::shared_ptr<Mesh<VB, T>> mesh;
@@ -471,11 +479,13 @@ struct TRenderer : IRenderer {
   Logger L;
 #endif
 
+  Rect viewPortDim;
+
   Skybox* skybox;
   Entity renderable;
   Engine* engine = nullptr;
   filament::Renderer* filaRenderer = nullptr;
-  SwapChain* swapChain = nullptr;
+  // SwapChain* swapChain = nullptr;
   Entity cameraEntity;
   Entity light;
   Entity pointLight;
@@ -505,10 +515,11 @@ struct TRenderer : IRenderer {
   MaterialInstance* bgMatInstance = nullptr;
   Texture* bgTex;
 
-  App app;
   bool needsDraw = false;
   T* dragTile;
   math::float3 lastNormalVec;
+
+  bool readOnly;
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;
@@ -516,7 +527,7 @@ struct TRenderer : IRenderer {
   static constexpr math::float3 kCameraUp = {0.0f, 1.0f, 0.0f};
   static constexpr float kCameraDist = 1.0f;
   static constexpr double kFieldOfViewDeg = 60.0;
-  float zoom = 1.f;
+  static constexpr float zoom = 1.f;
 
   static constexpr std::string_view FILAMAT_FILE_UNLIT = "bakedTextureUnlitTransparent.filamat";
   static constexpr std::string_view FILAMAT_FILE_MULTI_UNLIT = "multiTextureUnlitTransparent.filamat";
