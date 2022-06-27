@@ -214,7 +214,6 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   virtual void draw() {
-    L.info("readOnly", readOnly);
     TRenderer::draw();
     if (!readOnly) {
       drawAnchors();
@@ -309,14 +308,16 @@ struct HexSpinRenderer : TRenderer<TriangleVertexBuffer, HexTile> {
   }
 
   virtual void destroy() {
-    // engine->destroy(anchLight);
-    engine->destroy(anchRenderable);
-    engine->destroy(anchMatInstance);
-    engine->destroy(anchTex);
-    engine->destroy(anchTex1);
-    engine->destroy(anchMaterial);
-    engine->destroy(anchVb);
-    engine->destroy(anchIb);
+    if (!readOnly) {
+      // engine->destroy(anchLight);
+      engine->destroy(anchRenderable);
+      engine->destroy(anchMatInstance);
+      engine->destroy(anchTex);
+      engine->destroy(anchTex1);
+      engine->destroy(anchMaterial);
+      engine->destroy(anchVb);
+      engine->destroy(anchIb);
+    }
     TRenderer::destroy();
   }
 

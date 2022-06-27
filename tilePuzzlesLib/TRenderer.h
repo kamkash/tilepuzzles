@@ -80,13 +80,20 @@ struct TRenderer : IRenderer {
   }
 
   virtual void resize(int width, int height) {
+    winWidth = width;
+    winHeight = height;
     if (width > 0 && height > 0) {
-      const float aspect = viewPortDim.size.x / viewPortDim.size.y;
-      int32_t left = int32_t(viewPortDim.topLeft.x);
-      int32_t bottom = int32_t(viewPortDim.topLeft.y);
-      uint32_t vpwidth = uint32_t(viewPortDim.size.x);
-      uint32_t vpheight = uint32_t(viewPortDim.size.y);
+      int32_t left = int32_t(readOnly ? 0 : width / 2);
+      int32_t bottom = int32_t(0);
+
+      uint32_t vpwidth = uint32_t(readOnly ? width / 2 - 5 : width / 2);
+      uint32_t vpheight = uint32_t(height);
+      const float aspect = float(vpwidth) / float(vpheight);
       view->setViewport({left, bottom, vpwidth, vpheight});
+      zoom = 1. / aspect;
+      if (winWidth > 2800) {
+          zoom += .25;
+      }
       camera->setProjection(Camera::Projection::ORTHO, -aspect * zoom, aspect * zoom, -zoom, zoom, kNearPlane,
                             kFarPlane);
     }
@@ -94,10 +101,13 @@ struct TRenderer : IRenderer {
 
   virtual void init(const App& app) {
     viewPortDim = app.viewportRect;
+    viewportLayout = app.viewportLayout;
+
     initMesh();
     engine = app.engine;
     skybox = app.skybox;
     scene = engine->createScene();
+    scene->setSkybox(skybox);
     utils::EntityManager& em = utils::EntityManager::get();
     em.create(1, &cameraEntity);
     camera = engine->createCamera(cameraEntity);
@@ -106,6 +116,7 @@ struct TRenderer : IRenderer {
     view->setBloomOptions({.enabled = true});
     view->setCamera(camera);
     view->setScene(scene);
+    view->setCamera(camera);
   }
 
   virtual Path getTileMaterialPath() {
@@ -154,7 +165,7 @@ struct TRenderer : IRenderer {
     engine->destroy(scene);
     engine->destroy(view);
     engine->destroyCameraComponent(cameraEntity);
-    engine->destroy(filaRenderer);
+    // engine->destroy(filaRenderer);
   }
 
   virtual void update(double dt) {
@@ -331,10 +342,6 @@ struct TRenderer : IRenderer {
     TextureSampler sampler(MinFilter::LINEAR, MagFilter::LINEAR);
 
     // Set up view
-    if (!readOnly) {
-      scene->setSkybox(skybox);
-    }
-    view->setCamera(camera);
     view->setPostProcessingEnabled(false);
 
     // Create quad renderable
@@ -436,11 +443,13 @@ struct TRenderer : IRenderer {
   math::float3 normalizeViewCoord(const math::float2& viewCoord) const {
     math::mat4 projMat = camera->getProjectionMatrix();
     math::mat4 invProjMat = camera->inverseProjection(projMat);
-    float width = float(GameUtil::WINDOW_WIDTH);
-    float height = float(GameUtil::WINDOW_HEIGHT);
-    float normX =
-      viewCoord.x * 2. / (width - viewPortDim.topLeft.x) + 1 - 2. * width / (width - viewPortDim.topLeft.x);
-    float normY = -2. * viewCoord.y / (height - viewPortDim.topLeft.y) + 1;
+    float width = float(winWidth);
+    float height = float(winHeight);
+    float offsetX = readOnly ? 0. : width / 2;
+    float offsetY = 0.;
+
+    float normX = viewCoord.x * 2. / (width - offsetX) + 1 - 2. * width / (width - offsetX);
+    float normY = -2. * viewCoord.y / (height - offsetY) + 1;
     math::float4 normalizedView = {normX, normY, 0., 1.};
     math::float4 clipCoord = invProjMat * normalizedView;
     return {clipCoord.x, clipCoord.y, clipCoord.z};
@@ -480,6 +489,7 @@ struct TRenderer : IRenderer {
 #endif
 
   Rect viewPortDim;
+  ViewportLayout viewportLayout;
 
   Skybox* skybox;
   Entity renderable;
@@ -520,6 +530,8 @@ struct TRenderer : IRenderer {
   math::float3 lastNormalVec;
 
   bool readOnly;
+  int winWidth;
+  int winHeight;
 
   static constexpr double kNearPlane = -1.;
   static constexpr double kFarPlane = 1.;
@@ -527,7 +539,7 @@ struct TRenderer : IRenderer {
   static constexpr math::float3 kCameraUp = {0.0f, 1.0f, 0.0f};
   static constexpr float kCameraDist = 1.0f;
   static constexpr double kFieldOfViewDeg = 60.0;
-  static constexpr float zoom = 1.f;
+  float zoom = 1.f;
 
   static constexpr std::string_view FILAMAT_FILE_UNLIT = "bakedTextureUnlitTransparent.filamat";
   static constexpr std::string_view FILAMAT_FILE_MULTI_UNLIT = "multiTextureUnlitTransparent.filamat";

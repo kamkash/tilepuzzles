@@ -15,6 +15,7 @@ struct App {
   Skybox* skybox;
   filament::Renderer* filaRenderer = nullptr;
   Rect viewportRect;
+  ViewportLayout viewportLayout;
 };
 } // namespace tilepuzzles
 #endif

@@ -80,10 +80,11 @@ struct TAppWin {
 
   void init() {
     app.engine = Engine::create();
-    app.scene = app.engine->createScene();
     app.filaRenderer = app.engine->createRenderer();
+    // app.scene = app.engine->createScene();
     app.skybox =
-      Skybox::Builder().showSun(true).color({0. / 255., 255. / 255., 0. / 255., 1.f}).build(*app.engine);
+      Skybox::Builder().showSun(true).color({0. / 255., 0. / 255., 0. / 255., 1.f}).build(*app.engine);
+    // app.scene->setSkybox(app.skybox);
 #ifdef USE_SDL
     ASSERT_POSTCONDITION(SDL_Init(SDL_INIT_EVENTS) == 0, "SDL_Init Failure");
     GameUtil::GameUtil::init();
@@ -103,6 +104,15 @@ struct TAppWin {
   }
 
   void initRenderer() {
+    app.viewportLayout = vpLayout;
+    renderer->init(app);
+    if (roRenderer != nullptr) {
+      app.viewportLayout = roVpLayout;
+      roRenderer->init(app);
+    }
+  }
+
+  void initRenderer1() {
     app.viewportRect = vp;
     renderer->init(app);
     if (roRenderer != nullptr) {
@@ -133,7 +143,8 @@ struct TAppWin {
       swapChain = nullptr;
     }
     app.engine->destroy(app.skybox);
-    app.engine->destroy(app.scene);
+    // app.engine->destroy(app.scene);
+    app.engine->destroy(app.filaRenderer);
     Engine::destroy(&app.engine);
     destroy_window();
 #ifdef USE_SDL
@@ -160,13 +171,13 @@ struct TAppWin {
     // roRenderer = std::shared_ptr<IRenderer>(new SliderRenderer());
     // roRenderer->setReadOnly(true);
 
-    renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
-    roRenderer = std::shared_ptr<IRenderer>(new RollerRenderer());
-    roRenderer->setReadOnly(true);
-
-    // roRenderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
+    // renderer = std::shared_ptr<IRenderer>(new RollerRenderer());
+    // roRenderer = std::shared_ptr<IRenderer>(new RollerRenderer());
     // roRenderer->setReadOnly(true);
-    // renderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
+
+    renderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
+    roRenderer = std::shared_ptr<IRenderer>(new HexSpinRenderer());
+    roRenderer->setReadOnly(true);
   }
 
   static void animation_new_frame(TAppWin& win, double dt) {
@@ -371,13 +382,18 @@ struct TAppWin {
 #else
 
   void game_loop(double t) {
-    if (renderer && renderer->getSwapChain()) {
+    if (renderer && swapChain) {
       if (onNewFrame) {
         onNewFrame(*this, t);
       }
 
       if (needsDraw) {
-        renderer->filaRender();
+        if (app.filaRenderer->beginFrame(swapChain)) {
+          app.filaRenderer->render(renderer->getView());
+          if (roRenderer)
+            app.filaRenderer->render(roRenderer->getView());
+          app.filaRenderer->endFrame();
+        }
         needsDraw = false;
         lastDrawTime = t;
       }
@@ -403,8 +419,9 @@ struct TAppWin {
   GameContext* gameContext;
   App app;
   Rect vp = {.topLeft = {320, 0}, .size = {320, 320}};
-
   Rect roVp = {.topLeft = {0., 320. - 240}, .size = {240, 240}};
+  ViewportLayout vpLayout = {.dimFractions = {.5, 1.}, .offsetFractions = {0.5, 0.}};
+  ViewportLayout roVpLayout = {.dimFractions = {.5, .5}, .offsetFractions = {0., 0.5}};
 #ifdef USE_SDL
   Logger L;
 #endif

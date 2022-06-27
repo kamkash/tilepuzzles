@@ -26,5 +26,10 @@ struct Rect {
   Size size;
 };
 
+struct ViewportLayout {
+  filament::math::float2 dimFractions;
+  filament::math::float2 offsetFractions;
+};
+
 } // namespace tilepuzzles
 #endif
